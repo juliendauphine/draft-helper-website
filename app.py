@@ -3,7 +3,7 @@ import io
 import base64
 from flask import Response
 from drafting import calculate_team_winrate, get_champion_suggestions, sort_by_winrate, get_matchup_performance_graph, get_synergie_performance_graph
-
+from drafting import get_synergie_performance_data
 
 app = Flask(__name__)
 

@@ -391,6 +391,32 @@ def get_synergie_performance_graph(lane,champ,lane2check):
     fig.tight_layout()
     return fig
 
+def get_synergie_performance_data(lane, champ, lane2check):
+    if lane == lane2check:
+        print('can\'t have the same lane')
+        return None
+    
+    synergy_data = []
+    for champ2face, pr, *_ in accepted_cpl[LANE2INDEX[lane2check]]:
+        if champ2face != champ:
+            fmean, half_size = synergie_d2_dic[lane][champ][lane2check][champ2face]
+            synergy_data.append({
+                "champion": f"{champ2face} {round(pr, 1)}%",
+                "mean": round(fmean, 2),
+                "ci": round(half_size, 2),
+                "category": categorize(fmean, sp10, sp30, sp70, sp90)
+            })
+    
+    # Sort by mean descending
+    synergy_data.sort(key=lambda x: -x["mean"])
+    
+    # Return a dictionary with all needed data
+    return {
+        "synergies": synergy_data,
+        "title": f"{champ} ({lane}) Synergies Performance with {lane2check}",
+        "categories": {cat: color for cat, color in category_colors.items()}
+    }
+
 class DraftState:
     def __init__(self, team1=None, team2=None, picked_champs=None,remaininglanes1=None,remaininglanes2=None, turn=0, global_rating=0.0):
         self.team1 = team1 if team1 is not None else []  # List of (lane, champ) tuples

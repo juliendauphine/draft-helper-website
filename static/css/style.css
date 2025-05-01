@@ -447,22 +447,22 @@ body {
 }
 
 /* Champion column takes 80% of the width */
-.draft-table th:nth-child(2),
-.draft-table td:nth-child(2) {
-  width: 40%;
+.draft-table th:nth-child(3),
+.draft-table td:nth-child(3) {
+  width: 35%;
   cursor: pointer;
+}
+
+/* Favorite */
+.draft-table th:nth-child(1),
+.draft-table td:nth-child(1) {
+  width: 5%;
 }
 
 /* Role and Win Rate columns take 10% each */
-.draft-table th:nth-child(1),
-.draft-table td:nth-child(1) {
+.draft-table th:nth-child(2),
+.draft-table td:nth-child(2) {
   width: 10%;
-}
-
-.draft-table th:nth-child(3),
-.draft-table td:nth-child(3) {
-  width: 10%;
-  cursor: pointer;
 }
 
 .draft-table th:nth-child(4),
@@ -476,14 +476,20 @@ body {
   width: 10%;
   cursor: pointer;
 }
+
 .draft-table th:nth-child(6),
 .draft-table td:nth-child(6) {
   width: 10%;
   cursor: pointer;
 }
-
 .draft-table th:nth-child(7),
 .draft-table td:nth-child(7) {
+  width: 10%;
+  cursor: pointer;
+}
+
+.draft-table th:nth-child(8),
+.draft-table td:nth-child(8) {
   width: 10%;
   cursor: pointer;
 }

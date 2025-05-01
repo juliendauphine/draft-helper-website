@@ -149,13 +149,14 @@
                   <table>
                     <thead>
                       <tr>
+                        <th>★</th>
                         <th>Role</th>
-                        <th onclick="sortTable(1)">Champion</th>
-                        <th onclick="sortTable(2)">Blind Pick Score</th>
-                        <th onclick="sortTable(3)">Matchup Variance</th>
-                        <th onclick="sortTable(4)">Synergie Variance</th>
-                        <th onclick="sortTable(5)">Win Rate</th>
-                        <th onclick="sortTable(6)">Pick Rate</th>
+                        <th onclick="sortTable(2)">Champion</th>
+                        <th onclick="sortTable(3)">Blind Pick Score</th>
+                        <th onclick="sortTable(4)">Matchup Variance</th>
+                        <th onclick="sortTable(5)">Synergie Variance</th>
+                        <th onclick="sortTable(6)">Win Rate</th>
+                        <th onclick="sortTable(7)">Pick Rate</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -706,6 +707,7 @@
       <img id="modal-image" src="" style="max-width:90%; max-height:90%;">
     </div>
     <!-- Importing external JavaScript file -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
 </body>

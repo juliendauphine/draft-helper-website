@@ -86,15 +86,10 @@ const laneToggles = document.querySelectorAll('#lane-toggle input[type="checkbox
 const ally_winrate_div = document.getElementById("team1-winrate");
 const opponent_winrate_div = document.getElementById("team2-winrate");
 
-// When the input is focused, add the 'focused' class to the search bar
-searchInput.addEventListener("focus", () => {
-searchBar.classList.add("focused");
-});
 
-// When the input is blurred (focus lost), remove the 'focused' class
-searchInput.addEventListener("blur", () => {
-searchBar.classList.remove("focused");
-});
+// Remove any existing event listeners
+//searchInput.removeEventListener("focus", () => {});
+//searchInput.removeEventListener("blur", () => {});
 
 // Show the clear icon when there is text in the input
 searchInput.addEventListener("input", () => {
@@ -106,13 +101,35 @@ searchInput.addEventListener("input", () => {
   filterTable();
 });
 
-
 // Clear the input when the clear icon is clicked
 clearIcon.addEventListener("click", () => {
-searchInput.value = ""; // Clear the text
-clearIcon.style.display = "none"; // Hide the clear icon
-searchInput.focus(); // Keep the focus on the input
+  searchInput.value = ""; // Clear the text
+  clearIcon.style.display = "none"; // Hide the clear icon
+  searchInput.focus(); // Keep the focus on the input
+  filterTable(); // Update the table
 });
+
+// Add this CSS to your stylesheet
+// Replace the JavaScript-based focus handling with CSS
+const style = document.createElement('style');
+style.textContent = `
+  .search-bar:has(input:focus) {
+    /* Add your focused styles here */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    border-color: #3b82f6;
+  }
+  
+  /* If the above doesn't work in all browsers, this is a fallback */
+  #search-input:focus {
+    outline: none;
+  }
+  
+  #search-input:focus + .search-bar {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    border-color: #3b82f6;
+  }
+`;
+document.head.appendChild(style);
 
 
 //TEAM TOGGLES
@@ -170,12 +187,13 @@ supportBtn.addEventListener('click', () => togglePositionButton(supportBtn));
 
 function filterTable() {
   const searchText = searchInput.value.toLowerCase();
+
   const activeLanes = Array.from(laneButtons)
     .filter(btn => btn.classList.contains('active'))
     .map(btn => btn.value); // now using the value attribute!
   const rows = document.querySelectorAll('.draft-table tbody tr');
   rows.forEach(row => {
-    const championCell = row.querySelector('td:nth-child(2)');
+    const championCell = row.querySelector('td:nth-child(3)');
     const championLane = row.getAttribute("data-lane");
     if (championCell && championLane) {
       const championName = championCell.textContent.toLowerCase();
@@ -490,6 +508,10 @@ function hexToRgb(hex) {
   };
 }
 
+const filledStar = '★';   // Unicode filled star
+const emptyStar = '☆';    // Unicode empty star
+const favoriteKey = 'favorites';
+
 function populateDraftTable(draftData) {
   // const draftData = draftData.sort((a, b) => {
   //   const winrateA = parseFloat(a.winrate.replace('%', ''));
@@ -509,6 +531,36 @@ function populateDraftTable(draftData) {
     row.setAttribute('data-champion', item.championImageName);
     row.setAttribute('data-lane', item.lane);
     row.setAttribute('data-id', item.champion);
+
+    
+
+    const favoriteCell = document.createElement('td');
+    const starSpan = document.createElement('span');
+    starSpan.className = 'favorite-star';
+    let favorites = JSON.parse(localStorage.getItem(favoriteKey)) || {};
+    const favKey = `${item.championImageName}-${item.lane}`;
+    starSpan.textContent = favorites[favKey] ? filledStar : emptyStar;  // default to not favorite
+    starSpan.style.cursor = 'pointer';
+    starSpan.style.fontSize = '24px';
+    //starSpan.style.color = '#FFD700';  // gold color
+    favoriteCell.appendChild(starSpan);
+
+    // Toggle favorite status on click
+    starSpan.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const favorites = JSON.parse(localStorage.getItem(favoriteKey)) || {};
+      const favKey = `${item.championImageName}-${item.lane}`;
+    
+      if (starSpan.textContent === emptyStar) {
+        starSpan.textContent = filledStar;
+        favorites[favKey] = true;
+      } else {
+        starSpan.textContent = emptyStar;
+        delete favorites[favKey];
+      }
+    
+      localStorage.setItem(favoriteKey, JSON.stringify(favorites));
+    });
 
     // Create the lane icon cell (we'll add SVG based on the lane)
     const laneCell = document.createElement('td');
@@ -575,6 +627,7 @@ function populateDraftTable(draftData) {
     winrateCell.style.color = rgbString(winrate2color(parseFloat(winrate.slice(0, -1))));
 
     // Append cells to the row
+    row.append(favoriteCell);
     row.appendChild(laneCell);
     row.appendChild(championCell);
     row.appendChild(blindrCell);
@@ -626,6 +679,7 @@ function populateDraftTable(draftData) {
     // Append the row to the table body
     tableBody.appendChild(row);
   });
+  sortTable(6);
 }
 
 function getTeams(){
@@ -860,6 +914,15 @@ function sortTable(columnIndex) {
   table.setAttribute(`data-sort-${columnIndex}`, newDirection);
 
   rows.sort((a, b) => {
+    const aFav = a.cells[0].innerText.trim() === '★' ? 1 : 0;
+    const bFav = b.cells[0].innerText.trim() === '★' ? 1 : 0;
+
+    // First sort by favorite (descending: filled stars first)
+    if (aFav !== bFav) {
+      return bFav - aFav;
+    }
+
+    // Then sort by the selected column
     const aText = a.cells[columnIndex].innerText.trim();
     const bText = b.cells[columnIndex].innerText.trim();
 
