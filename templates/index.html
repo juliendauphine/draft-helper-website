@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Team Draft</title>
+
+    <!-- Importing external CSS file -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}">
+    <!-- Optionally, you can add more meta tags for SEO, etc. -->
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="column-wrapper">
+          <div class="team-column">
+            <div class="team-item header">
+              <div class="menu">⋮</div>
+              BLUE SIDE
+              <span class="score" id="team1-winrate">50.00</span>
+              <div class="menu-content">
+                <div class="menu-item">ALLY TEAM</div>
+                <div class="menu-item hoverable" id="reset-ally">
+                  <span class="trash-icon">🗑️</span> RESET TEAM
+                </div>
+              </div>
+            </div>
+            <div class="team-item ally">
+              <div class="menu">⋮</div>
+              <span class="pick-label">PICK 1</span>
+              <div class="menu-content">
+                <div class="menu-item reset-champion">Reset Champion</div>
+              </div>
+            </div>
+            <div class="team-item ally">
+              <div class="menu">⋮</div>
+              <span class="pick-label">PICK 2</span>
+              <div class="menu-content">
+                <div class="menu-item reset-champion">Reset Champion</div>
+              </div>
+            </div>
+            <div class="team-item ally">
+              <div class="menu">⋮</div>
+              <span class="pick-label">PICK 3</span>
+              <div class="menu-content">
+                <div class="menu-item reset-champion">Reset Champion</div>
+              </div>
+            </div>
+            <div class="team-item ally">
+              <div class="menu">⋮</div>
+              <span class="pick-label">PICK 4</span>
+              <div class="menu-content">
+                <div class="menu-item reset-champion">Reset Champion</div>
+              </div>
+            </div>
+            <div class="team-item ally">
+              <div class="menu">⋮</div>
+              <span class="pick-label">PICK 5</span>
+              <div class="menu-content">
+                <div class="menu-item reset-champion">Reset Champion</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      
+        <div class="spacer">
+          <div class="bans">
+            <div class="banheader">
+              <div class="blue-header">
+                <h1 class="header-text">BLUE SIDE</h1>
+              </div>
+              <div class="red-header">
+                <h1 class="header-text">RED SIDE</h1>
+              </div>
+            </div>
+            <div class="ban-content">
+              <div class="blue-side" id="blue-side"></div>
+              <div class="red-side" id="red-side"></div>
+            </div>
+          </div>
+          <div id="tab-selector">
+            <div id="tab-draft" class="tab active-tab">RECOMMENDATION</div>
+            <div id="tab-analysis" class="tab">ANALYSIS</div>
+          </div>
+          <div id="tab-content">
+            <div class="championSelector" id="draft-content">
+                <div class="container">
+                  <div class="search-bar">
+                  <span class="search-icon">
+                    <!-- Loupe Icon (Search) -->
+                    <svg class="loupe-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"></path>
+                    </svg>
+                  </span>
+        
+                  <input type="text" id="search-input" placeholder="Search champions..." />
+                  <span class="clear-icon" id="clear-icon" style="display: none;">
+                    <!-- Cross icon as a minimalist SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
+                      <path d="M6 18L18 6M6 6l12 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+        
+                  <div class="toggle-container" style="display: none;">
+                  <div class="toggle-wrapper">
+                    <button id="ally-btn" type="button" class="team-toggle-btn active">
+                      ally
+                    </button>
+                    <button id="opponent-btn" type="button" class="team-toggle-btn">
+                      opponent
+                    </button>
+                  </div>
+                </div>
+        
+                  <div class="toggle-container">
+                  <div class="toggle-wrapper" id="lane-toggle">
+                    <!-- Top -->
+                    <button id="top-btn" type="button" class="team-toggle-btn" value="Top">
+                      <svg viewBox="0 0 31 31" class="h-7"><g fill="currentColor" fill-rule="evenodd" transform="rotate(-180 13.25 13.25)"><polygon points="22.063 3 22.063 21.969 3 21.969 7.053 17.936 18.063 17.969 17.999 7.044"></polygon><polygon fill-opacity=".3" points="0 0 14.593 0 19.109 0 15.089 4.011 4.002 4 4.002 15.076 0 19.07 0 14.491"></polygon><rect width="6" height="6" x="8" y="8" fill-opacity=".3"></rect></g></svg>
+                    </button>
+        
+                    <!-- Jungle -->
+                    <button id="jungle-btn" type="button" class="team-toggle-btn"  value="Jungle">
+                      <svg viewBox="0 0 31 31" class="h-7"><g fill="currentColor" fill-rule="evenodd" transform="translate(4 3)"><path d="M11.5565033 25.2593129L3.71050008 17.007843C3.53174845 13.6218567 2.29491509 10.7161679 0 8.29077657 3.7954305 10.8023461 6.10286289 13.0322181 6.92229716 14.9803925 6.50825161 8.81697083 5.33232795 3.82350667 3.39452616 0 8.87327915 7.71470812 11.7037862 13.5908949 11.8860474 17.6285604 12.0683085 21.6662259 11.9584605 24.20981 11.5565033 25.2593129zM14.653773 21.2846629C14.9109039 14.93976 17.4729716 10.187166 22.339976 7.0268809 19.9557631 10.6189931 18.8951467 14.045261 19.1581268 17.3056844L14.653773 21.2846629zM13.429067 14.4254201L12.0960337 8.97735596C13.4903276 6.05259874 15.7644196 3.11883375 18.9183095.176060994 16.7638533 4.16490512 15.401769 7.34258185 14.8320567 9.70909119 14.2623444 12.0756005 13.7946811 13.6477102 13.429067 14.4254201z"></path></g></svg>
+                    </button>
+        
+                    <!-- Mid -->
+                    <button id="mid-btn" type="button" class="team-toggle-btn"  value="Middle">
+                      <svg viewBox="0 0 31 31" class="h-7"><g fill="currentColor" fill-rule="evenodd" transform="translate(4.5 4.5)"><polygon fill-opacity=".3" points="0 0 14.519 0 10.484 4 3.997 4 3.997 10.523 0 14.491"></polygon><polygon fill-opacity=".3" points="7.5 7.5 22.019 7.5 17.984 11.5 11.497 11.5 11.497 18.023 7.5 21.991" transform="rotate(-180 14.76 14.746)"></polygon><polygon points="18 0 22 0 22 4 4 22 0 22 0 18"></polygon></g></svg>
+                    </button>
+        
+                    <!-- Bot -->
+                    <button id="bot-btn" type="button" class="team-toggle-btn"  value="Bottom">
+                      <svg viewBox="0 0 31 31" class="h-7"><g fill="currentColor" fill-rule="evenodd" transform="translate(4.5 4.5)"><polygon points="22.063 3 22.063 21.969 3 21.969 7.053 17.936 18.063 17.969 17.999 7.044"></polygon><polygon fill-opacity=".3" points="0 0 14.593 0 19.109 0 15.089 4.011 4.002 4 4.002 15.076 0 19.07 0 14.491"></polygon><rect width="6" height="6" x="8" y="8" fill-opacity=".3"></rect></g></svg>
+                    </button>
+        
+                    <!-- Support -->
+                    <button id="support-btn" type="button" class="team-toggle-btn"  value="Support">
+                      <svg viewBox="0 0 31 31" class="h-7"><g fill="currentColor" fill-rule="evenodd" transform="translate(1.5 4)"><polygon points="14.089 22.953 18.041 19.779 14.089 9.976 10.121 19.779"></polygon><polygon points="8.841 13.988 11.786 8.453 9.102 6 0 6 7.895 9.466 5.868 11.388"></polygon><polygon points="25.341 13.988 28.286 8.453 25.602 6 16.5 6 24.395 9.466 22.368 11.388" transform="matrix(-1 0 0 1 44.786 0)"></polygon><polygon points="13.992 7.007 18.044 2.955 16.04 .951 12.009 .951 10.025 2.934"></polygon></g></svg>
+                    </button>
+                  </div>
+                </div>
+        
+        
+                </div>
+                <div class="draft-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Role</th>
+                        <th onclick="sortTable(1)">Champion</th>
+                        <th onclick="sortTable(2)">Blind Pick Score</th>
+                        <th onclick="sortTable(3)">Matchup Variance</th>
+                        <th onclick="sortTable(4)">Synergie Variance</th>
+                        <th onclick="sortTable(5)">Win Rate</th>
+                        <th onclick="sortTable(6)">Pick Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- <tr data-champion="Ahri" data-lane="Middle">
+                        <td>
+                          <svg class="role-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" fill="#fff" />
+                          </svg>
+                        </td>
+                        <td>
+                          <img src="https://ddragon.leagueoflegends.com/cdn/11.24.1/img/champion/Ahri.png" alt="Ahri" class="champion-image" />
+                          Ahri
+                        </td>
+                        <td>52%</td>
+                      </tr>
+                      <tr data-champion="LeeSin" data-lane="Jungle">
+                        <td>
+                          <svg class="role-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" fill="#fff" />
+                          </svg>
+                        </td>
+                        <td>
+                          <img src="https://ddragon.leagueoflegends.com/cdn/11.24.1/img/champion/LeeSin.png" alt="Lee Sin" class="champion-image" />
+                          Lee Sin
+                        </td>
+                        <td>53%</td>
+                      </tr> -->
+                    </tbody>
+                  </table>
+                </div>
+            </div>
+            <div id="analysis-content" style="display: none;">
+              ANALYSIS
+            </div>
+          </div>
+        </div>
+      
+        <div class="column-wrapper">
+          <div class="team-column">
+            <div class="team-item header">
+              <div class="menu">⋮</div>
+              RED SIDE
+              <span class="score"  id="team2-winrate">50.00</span>
+              <div class="menu-content">
+                <div class="menu-item">OPPONENT TEAM</div>
+                <div class="menu-item hoverable" id="reset-opponent">
+                  <span class="trash-icon">🗑️</span> RESET TEAM
+                </div>
+              </div>
+            </div>
+            <div class="team-item opponent">
+            <div class="menu">⋮</div>
+            <span class="pick-label">PICK 1</span>
+            <div class="menu-content">
+                <div class="menu-item reset-champion">Reset Champion</div>
+              </div>
+            </div>
+            <div class="team-item opponent">
+            <div class="menu">⋮</div>
+            <span class="pick-label">PICK 2</span>
+            <div class="menu-content">
+                <div class="menu-item reset-champion">Reset Champion</div>
+              </div>
+            </div>
+            <div class="team-item opponent">
+            <div class="menu">⋮</div>
+            <span class="pick-label">PICK 3</span>
+            <div class="menu-content">
+                <div class="menu-item reset-champion">Reset Champion</div>
+              </div>
+            </div>
+            <div class="team-item opponent">
+            <div class="menu">⋮</div>
+            <span class="pick-label">PICK 4</span>
+            <div class="menu-content">
+                <div class="menu-item reset-champion">Reset Champion</div>
+              </div>
+            </div>
+            <div class="team-item opponent">
+            <div class="menu">⋮</div>
+            <span class="pick-label">PICK 5</span>
+            <div class="menu-content">
+                <div class="menu-item reset-champion">Reset Champion</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modalOverlay" style="display: none;">
+      <div class="modal-container">
+          <!-- Close Button -->
+          <div class="modal-close" id="modalClose"></div>
+
+          <!-- Champion Profile -->
+          <div class="champion-header">
+              <div class="champion-portrait">
+                  <img src="https://ddragon.leagueoflegends.com/cdn/11.24.1/img/champion/Ahri.png" alt="Gwen Champion Portrait" />
+              </div>
+              <div class="champion-info">
+                  <h1 class="champion-name">Gwen</h1>
+                  <div class="champion-role">Ally Top</div>
+              </div>
+              <button class="lolalytics-button">LOLALYTICS</button>
+          </div>
+
+          <!-- Stats Container -->
+          <div class="stats-container">
+              <!-- Champion Stat -->
+              <div class="stat-box">
+                  <div class="stat-icon">👤</div>
+                  <div class="stat-values">
+                      <div class="stat-title">Champion</div>
+                      <div class="stat-value champion-stat-value">50.88</div>
+                  </div>
+              </div>
+
+              <!-- Matchups Stat -->
+              <div class="stat-box">
+                  <div class="stat-icon">⚔️</div>
+                  <div class="stat-values">
+                      <div class="stat-title">Matchups</div>
+                      <div class="stat-value matchups-stat-value">47.35</div>
+                  </div>
+              </div>
+
+              <!-- Duos Stat -->
+              <div class="stat-box">
+                  <div class="stat-icon">👥</div>
+                  <div class="stat-values">
+                      <div class="stat-title">Duos</div>
+                      <div class="stat-value duos-stat-value">50.90</div>
+                  </div>
+              </div>
+
+              <!-- Winrate Stat -->
+              <div class="stat-box">
+                  <div class="stat-icon">📊</div>
+                  <div class="stat-values">
+                      <div class="stat-title">Winrate</div>
+                      <div class="stat-value winrate-stat-value">49.13</div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- Matchups Section -->
+          <div class="matchups-header">
+              <h2 class="matchups-title">Matchups</h2>
+              <p class="matchups-subtitle">Champion Winrates Normalized</p>
+          </div>
+          
+        <div class="recap">
+          <table class="matchups-table">
+              <!-- Table Headers -->
+              <thead class="table-header">
+                  <tr>
+                      <th>Role</th>
+                      <th>Ally</th>
+                      <th class="winrate-header">Winrate</th>
+                      <th>Matchup</th>
+                      <th>Role</th>
+                      <th>Opponent</th>
+                      <th class="winrate-header">Winrate</th>
+                  </tr>
+              </thead>
+
+              <tbody>
+                  <!-- Gwen vs Warwick -->
+                  <tr class="matchup-row">
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon gwen-blue">
+                                  <img src="" alt="Gwen" />
+                              </div>
+                              <span class="champion-name">Gwen</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate win-winrate">46.87</div>
+                      </td>
+                      <td>
+                          <div class="winner-indicator win-arrow">→</div>
+                      </td>
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon warwick-green">
+                                  <img src="" alt="Warwick" />
+                              </div>
+                              <span class="champion-name">Warwick</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate loss-winrate">53.13</div>
+                      </td>
+                  </tr>
+
+                  <!-- Gwen vs Hecarim -->
+                  <tr class="matchup-row">
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon gwen-blue">
+                                  <img src="" alt="Gwen" />
+                              </div>
+                              <span class="champion-name">Gwen</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate win-winrate">50.51</div>
+                      </td>
+                      <td>
+                          <div class="winner-indicator loss-arrow">←</div>
+                      </td>
+                      <td>
+                          <div class="role-icon"></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon hecarim-blue">
+                                  <img src="" alt="Hecarim" />
+                              </div>
+                              <span class="champion-name">Hecarim</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate loss-winrate">49.49</div>
+                      </td>
+                  </tr>
+
+                  <!-- Gwen vs Orianna -->
+                  <tr class="matchup-row">
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon gwen-blue">
+                                  <img src="" alt="Gwen" />
+                              </div>
+                              <span class="champion-name">Gwen</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate win-winrate">49.35</div>
+                      </td>
+                      <td>
+                          <div class="winner-indicator win-arrow">→</div>
+                      </td>
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon orianna-purple">
+                                  <img src="" alt="Orianna" />
+                              </div>
+                              <span class="champion-name">Orianna</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate loss-winrate">50.65</div>
+                      </td>
+                  </tr>
+
+                  <!-- Gwen vs Jinx -->
+                  <tr class="matchup-row">
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon gwen-blue">
+                                  <img src="" alt="Gwen" />
+                              </div>
+                              <span class="champion-name">Gwen</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate win-winrate">50.77</div>
+                      </td>
+                      <td>
+                          <div class="winner-indicator loss-arrow">←</div>
+                      </td>
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon jinx-pink">
+                                  <img src="" alt="Jinx" />
+                              </div>
+                              <span class="champion-name">Jinx</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate loss-winrate">49.23</div>
+                      </td>
+                  </tr>
+
+                  <!-- Gwen vs Nami -->
+                  <tr class="matchup-row">
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon gwen-blue">
+                                  <img src="" alt="Gwen" />
+                              </div>
+                              <span class="champion-name">Gwen</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate win-winrate">49.86</div>
+                      </td>
+                      <td>
+                          <div class="winner-indicator win-arrow">→</div>
+                      </td>
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon nami-green">
+                                  <img src="" alt="Nami" />
+                              </div>
+                              <span class="champion-name">Nami</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate loss-winrate">50.14</div>
+                      </td>
+                  </tr>
+
+                  <!-- Summary Row -->
+                  <tr class="summary-row">
+                      <td colspan="3">
+                          <div class="summary-winrate win-winrate">47.35</div>
+                      </td>
+                      <td>
+                          <div class="winner-indicator win-arrow">→</div>
+                      </td>
+                      <td colspan="3">
+                          <div class="summary-winrate loss-winrate">52.65</div>
+                      </td>
+                  </tr>
+              </tbody>
+          </table>
+        </div>
+        <div class="matchups-header">
+          <h2 class="matchups-title">Duos</h2>
+          <p class="matchups-subtitle">Champion Winrates Normalized</p>
+        </div>
+      
+        <div class="recap">
+          <table class="matchups-table duo">
+              <!-- Table Headers -->
+              <thead class="table-header">
+                  <tr>
+                      <th>Role</th>
+                      <th>Champion</th>
+                      <th>Synergie</th>
+                      <th>Role</th>
+                      <th>Ally</th>
+                      <th class="winrate-header">Winrate</th>
+                  </tr>
+              </thead>
+
+              <tbody>
+                  <tr class="matchup-row">
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon gwen-blue">
+                                  <img src="" alt="Gwen" />
+                              </div>
+                              <span class="champion-name">Gwen</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon warwick-green">
+                                  <img src="" alt="Warwick" />
+                              </div>
+                              <span class="champion-name">Warwick</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate loss-winrate">53.13</div>
+                      </td>
+                  </tr>
+                  <tr class="matchup-row">
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon gwen-blue">
+                                  <img src="" alt="Gwen" />
+                              </div>
+                              <span class="champion-name">Gwen</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon hecarim-blue">
+                                  <img src="" alt="Hecarim" />
+                              </div>
+                              <span class="champion-name">Hecarim</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate loss-winrate">49.49</div>
+                      </td>
+                  </tr>
+                  <tr class="matchup-row">
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon gwen-blue">
+                                  <img src="" alt="Gwen" />
+                              </div>
+                              <span class="champion-name">Gwen</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon orianna-purple">
+                                  <img src="" alt="Orianna" />
+                              </div>
+                              <span class="champion-name">Orianna</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate loss-winrate">50.65</div>
+                      </td>
+                  </tr>
+                  <tr class="matchup-row">
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon gwen-blue">
+                                  <img src="" alt="Gwen" />
+                              </div>
+                              <span class="champion-name">Gwen</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon jinx-pink">
+                                  <img src="" alt="Jinx" />
+                              </div>
+                              <span class="champion-name">Jinx</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate loss-winrate">49.23</div>
+                      </td>
+                  </tr>
+                  <tr class="matchup-row">
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon gwen-blue">
+                                  <img src="" alt="Gwen" />
+                              </div>
+                              <span class="champion-name">Gwen</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="role-icon "></div>
+                      </td>
+                      <td>
+                          <div class="champion-cell">
+                              <div class="champion-icon nami-green">
+                                  <img src="" alt="Nami" />
+                              </div>
+                              <span class="champion-name">Nami</span>
+                          </div>
+                      </td>
+                      <td>
+                          <div class="winrate loss-winrate">50.14</div>
+                      </td>
+                  </tr>
+                  <tr class="summary-row">
+                      <td colspan="5">
+                          <div class="summary-winrate loss-winrate">52.65</div>
+                      </td>
+                  </tr>
+              </tbody>
+          </table>
+        </div>
+        <div class="matchup-synergy-toggle">
+          <div class="matchup-synergy-wrapper">
+            <button class="matchup-synergy-btn active" id="matchup-btn">Matchups</button>
+            <button class="matchup-synergy-btn" id="synergy-btn">Synergies</button>
+          </div>
+        </div>
+        
+        <!-- Role Selector -->
+        <div class="role-selector">
+          <div class="role-selector-wrapper">
+            <button class="role-btn active" id="top-btn">Top</button>
+            <button class="role-btn" id="jungle-sbtn">Jungle</button>
+            <button class="role-btn" id="middle-sbtn">Middle</button>
+            <button class="role-btn" id="bottom-sbtn">Bottom</button>
+            <button class="role-btn" id="support-sbtn">Support</button>
+          </div>
+        </div>
+        <div class="graphM">
+          <div class="graph-container">
+            <img src="" alt="Graph" style="max-width: 100%;height: auto;">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="image-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+    background:rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:1000;">
+      <img id="modal-image" src="" style="max-width:90%; max-height:90%;">
+    </div>
+    <!-- Importing external JavaScript file -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
+</body>
+</html>
