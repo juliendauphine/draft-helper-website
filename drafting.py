@@ -4,9 +4,6 @@ from data import possible_champs
 from utils import LANES, LANE2INDEX
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-import numpy as np
-# import seaborn as sns
-# import pandas as pd
 
 def weighted_variance(values, weights):
     if len(values) != len(weights):
