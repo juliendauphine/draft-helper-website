@@ -65,6 +65,7 @@ def calculate_team_winrate(team1,team2):
             champion2 = element2['champion']
             #add
             d2 = synergie_d2_dic[lane][champion][lane2][champion2][0]
+            #print(lane,champion,lane2,champion2)
             w_synergie = d2 +50#synergie_dic[lane][champion][lane2][champion2]-tier_delta
             synergie_rating = winrate2rating(w_synergie/100)
             global_rating+=synergie_rating

@@ -22,6 +22,10 @@ def sdelta2(w_ab,wa,wb,w_tier):#for synergies
     return w_ab - g(wa,wb)
 
 def winrate2rating(w):
+    try:
+        v = -400 * math.log10(( 1 / w ) - 1)
+    except:
+        print(w)
     return -400 * math.log10(( 1 / w ) - 1)
 
 def rating2winrate(r):

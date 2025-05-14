@@ -101,10 +101,14 @@ searchInput.addEventListener("input", () => {
   filterTable();
 });
 
-// Clear the input when the clear icon is clicked
-clearIcon.addEventListener("click", () => {
+function clear_search_input(){
   searchInput.value = ""; // Clear the text
   clearIcon.style.display = "none"; // Hide the clear icon
+}
+
+// Clear the input when the clear icon is clicked
+clearIcon.addEventListener("click", () => {
+  clear_search_input();
   searchInput.focus(); // Keep the focus on the input
   filterTable(); // Update the table
 });
@@ -671,6 +675,8 @@ function populateDraftTable(draftData) {
         midBtn.classList.remove('active');
         botBtn.classList.remove('active');
         supportBtn.classList.remove('active');
+
+        clear_search_input();
         analyseTeams();
         getRecos();
       }
@@ -679,7 +685,7 @@ function populateDraftTable(draftData) {
     // Append the row to the table body
     tableBody.appendChild(row);
   });
-  sortTable(6);
+  sortTable(6,change_order=false);
 }
 
 function getTeams(){
@@ -903,14 +909,22 @@ tabAnalysis.addEventListener('click', () => {
 
 
 //SORT TABLE
-function sortTable(columnIndex) {
+function sortTable(columnIndex,change_order=true) {
   const table = document.querySelector('.draft-table table');
   const rows = Array.from(table.rows).slice(1); // exclude header
   const isNumeric = !isNaN(rows[0].cells[columnIndex].innerText);
-
+  const hasAttribute = table.hasAttribute(`data-sort-${columnIndex}`);
+  if(change_order && !hasAttribute){
+    change_order = false;
+  }
   // Toggle sort direction
-  const currentDirection = table.getAttribute(`data-sort-${columnIndex}`) || 'asc';
-  const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+  const currentDirection = table.getAttribute(`data-sort-${columnIndex}`) || 'desc';
+  const newDirection = change_order  ? (currentDirection === 'asc' ? 'desc' : 'asc')  : currentDirection;
+  [...table.attributes].forEach(attr => {
+    if (attr.name.startsWith('data-sort-')) {
+      table.removeAttribute(attr.name);
+    }
+  });
   table.setAttribute(`data-sort-${columnIndex}`, newDirection);
 
   rows.sort((a, b) => {

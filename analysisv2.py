@@ -24,8 +24,8 @@ def get_true_winrate_per_patch(patches_data,patches,accepted_cpl):
                     adj_winrate = 0
                     playrate_sum = 0
                     for champ2face, _, _ in accepted_cpl[i]:
-                        playrate = patches_data[patch][lane2face][champ2face]['Pick_rate']
-                        if champ2face != champ and champ2face in champ_data['Matchups'][lane2face]:
+                        if champ2face != champ and champ2face in champ_data['Matchups'][lane2face] and champ2face in patches_data[patch][lane2face]:
+                            playrate = patches_data[patch][lane2face][champ2face]['Pick_rate']
                             matchup_winrate = float(champ_data['Matchups'][lane2face][champ2face]['win_rate'])
                             matchup_playrate = float(champ_data['Matchups'][lane2face][champ2face]['games']) / n_games
                             diff = (matchup_winrate - unadj_winrate) * (matchup_playrate - playrate) / 100
@@ -47,9 +47,10 @@ def get_true_winrate_per_patch(patches_data,patches,accepted_cpl):
                     adj_winrate = 0
                     playrate_sum = 0
                     for allychamp, _, _ in accepted_cpl[i]:
-                        playrate = patches_data[patch][lanewith][allychamp]['Pick_rate']
-                        if allychamp != champ and allychamp in champ_data['Synergies'][lanewith]:
+                        
+                        if allychamp != champ and allychamp in champ_data['Synergies'][lanewith] and allychamp in patches_data[patch][lanewith]:
                             #print(champ,lane,lanewith,allychamp)
+                            playrate = patches_data[patch][lanewith][allychamp]['Pick_rate']
                             synergy_winrate = float(champ_data['Synergies'][lanewith][allychamp]['win_rate'])
                             synergy_playrate = float(champ_data['Synergies'][lanewith][allychamp]['games']) / n_games
                             diff = (synergy_winrate - unadj_winrate) * (synergy_playrate - playrate) / 100
@@ -91,10 +92,14 @@ def get_matchup_values(accepted_cpl,patches,patches_data,lane,champ):
                     matchups_ngames[k][j] = 1
                     continue
                 else:
-                    g = int(mdata[laner_vs]['games'])
-                    wr = float(mdata[laner_vs]['win_rate'])
-                    matchups_wr[k][j] += wr*g
-                    matchups_ngames[k][j] += g
+                    if laner_vs in mdata:
+                        g = int(mdata[laner_vs]['games'])
+                        wr = float(mdata[laner_vs]['win_rate'])
+                        matchups_wr[k][j] += wr*g
+                        matchups_ngames[k][j] += g
+                    else:
+                        matchups_wr[k][j] += 0
+                        matchups_ngames[k][j] += 0
     matchup_winrates = [[-1 if matchups_wr[k][j]==-1 else matchups_wr[k][j]/matchups_ngames[k][j] for j in range(len(accepted_cpl[LANE2INDEX[mlane]]))] for k,mlane in enumerate(LANES)]
     return matchup_winrates
 
