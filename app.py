@@ -3,7 +3,45 @@ import io
 import base64
 from flask import Response
 from drafting import calculate_team_winrate, get_champion_suggestions, sort_by_winrate, get_matchup_performance_graph, get_synergie_performance_graph
-from drafting import get_synergie_performance_data
+import os
+import requests
+
+def download_data_from_gdrive(file_id, output_path):
+    # Check if the file already exists
+    if os.path.exists(output_path):
+        print(f"File already exists: {output_path}")
+        return
+
+    # Otherwise, download it from Google Drive
+    url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(output_path, 'wb') as f:
+            f.write(response.content)
+        print(f"Downloaded: {output_path}")
+    else:
+        print(f"Failed to download file ({response.status_code}): {output_path}")
+
+DATA_DIR = "data"
+os.makedirs(DATA_DIR, exist_ok=True)
+
+FILES = {
+    "lolalytics_data_15.1_emerald_plus_all.json": "lolalytics_data_15.1_emerald_plus_all.json",
+    "lolalytics_data_15.2_emerald_plus_all.json": "lolalytics_data_15.2_emerald_plus_all.json",
+    "lolalytics_data_15.3_emerald_plus_all.json": "lolalytics_data_15.3_emerald_plus_all.json",
+    "lolalytics_data_15.4_emerald_plus_all.json": "lolalytics_data_15.4_emerald_plus_all.json",
+    "lolalytics_data_15.5_emerald_plus_all.json": "lolalytics_data_15.5_emerald_plus_all.json",
+    "lolalytics_data_15.6_emerald_plus_all.json": "lolalytics_data_15.6_emerald_plus_all.json",
+    "lolalytics_data_15.7_emerald_plus_all.json": "lolalytics_data_15.7_emerald_plus_all.json",
+    "lolalytics_data_15.8_emerald_plus_all.json": "lolalytics_data_15.8_emerald_plus_all.json",
+    "matchup_d2_data.json": "matchup_d2_data.json",
+    "synergie_d2_data.json": "synergie_d2_data.json",
+}
+
+for name, file_id in FILES.items():
+    output_path = os.path.join(DATA_DIR, name)
+    download_data_from_gdrive(file_id, output_path)
+
 
 app = Flask(__name__)
 
@@ -89,5 +127,5 @@ def graph2():
     return Response('No graph generated', status=400)
 
 if __name__ == '__main__':
-    #app.run(debug=True)
+    # Development server only
     app.run(host='0.0.0.0', port=5000, debug=True)
