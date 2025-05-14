@@ -26,19 +26,19 @@ DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
 FILES = {
-    "lolalytics_data_15.1_emerald_plus_all.json": "lolalytics_data_15.1_emerald_plus_all.json",
-    "lolalytics_data_15.2_emerald_plus_all.json": "lolalytics_data_15.2_emerald_plus_all.json",
-    "lolalytics_data_15.3_emerald_plus_all.json": "lolalytics_data_15.3_emerald_plus_all.json",
-    "lolalytics_data_15.4_emerald_plus_all.json": "lolalytics_data_15.4_emerald_plus_all.json",
-    "lolalytics_data_15.5_emerald_plus_all.json": "lolalytics_data_15.5_emerald_plus_all.json",
-    "lolalytics_data_15.6_emerald_plus_all.json": "lolalytics_data_15.6_emerald_plus_all.json",
-    "lolalytics_data_15.7_emerald_plus_all.json": "lolalytics_data_15.7_emerald_plus_all.json",
-    "lolalytics_data_15.8_emerald_plus_all.json": "lolalytics_data_15.8_emerald_plus_all.json",
-    "matchup_d2_data.json": "matchup_d2_data.json",
-    "synergie_d2_data.json": "synergie_d2_data.json",
+    "1LQ2QIRBhmWnbFbhYEVBad8rpQBXvatSW": "lolalytics_data_15.1_emerald_plus_all.json",
+    "1JCROLg--z3sCcGKuRy3WXo1MAxr-tVFL": "lolalytics_data_15.2_emerald_plus_all.json",
+    "1-aU4jBkx5nj1QJoDmwUggcqMHecsJQXr": "lolalytics_data_15.3_emerald_plus_all.json",
+    "1EDAQnlRNmyVu4VGL4vcS5n23c3mgBnfe": "lolalytics_data_15.4_emerald_plus_all.json",
+    "1YB9wDmzJrf4OKTfRluDwL84U08e2jx20": "lolalytics_data_15.5_emerald_plus_all.json",
+    "1eSeDp_Amyd7EBbPLpxRa3Hjf0fmZdaxR": "lolalytics_data_15.6_emerald_plus_all.json",
+    "1Ot3GmOLQecbdCXMQgHaNykqf1ODxWQFt": "lolalytics_data_15.7_emerald_plus_all.json",
+    "16bmlC4OQsycyP4dIaP2OE0Tt9Z7kgezb": "lolalytics_data_15.8_emerald_plus_all.json",
+    "1xUpsyqm4FElsNixb0uIJ-QhBHuREMBI9": "matchup_d2_data.json",
+    "1WTi9Ubda_txMuHP33BD-hpO9xzDjNBAG": "synergie_d2_data.json",
 }
 
-for name, file_id in FILES.items():
+for file_id, name in FILES.items():
     output_path = os.path.join(DATA_DIR, name)
     download_data_from_gdrive(file_id, output_path)
 
