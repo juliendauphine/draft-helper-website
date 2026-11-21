@@ -142,7 +142,20 @@
                     </button>
                   </div>
                 </div>
-        
+
+                  <!-- Filtres : playrate minimum + Champion's Strength -->
+                  <div class="filter-controls">
+                    <label class="playrate-filter" for="min-playrate" title="Hide champions whose playrate is below this value">
+                      <span class="filter-label">Min playrate</span>
+                      <input type="number" id="min-playrate" min="0" max="100" step="0.1" value="0" inputmode="decimal" />
+                      <span class="filter-unit">%</span>
+                    </label>
+                    <label class="strength-switch" for="strength-toggle" title="Take the Champion's Strength into account">
+                      <span class="filter-label">Champion's Strength</span>
+                      <input type="checkbox" id="strength-toggle" checked />
+                      <span class="strength-slider"></span>
+                    </label>
+                  </div>
         
                 </div>
                 <div class="draft-table">
@@ -188,9 +201,7 @@
                   </table>
                 </div>
             </div>
-            <div id="analysis-content" style="display: none;">
-              ANALYSIS
-            </div>
+            <div id="analysis-content" style="display: none;"></div>
           </div>
         </div>
       

@@ -1,3 +1,6 @@
+let patch = '15.17'
+
+
 // Mapping of lane types to their corresponding SVGs
 const laneSvgs = {
   'Top': `<svg viewBox="0 0 31 31" class="h-7"><g fill="currentColor" fill-rule="evenodd" transform="rotate(-180 13.25 13.25)"><polygon points="22.063 3 22.063 21.969 3 21.969 7.053 17.936 18.063 17.969 17.999 7.044"></polygon><polygon fill-opacity=".3" points="0 0 14.593 0 19.109 0 15.089 4.011 4.002 4 4.002 15.076 0 19.07 0 14.491"></polygon><rect width="6" height="6" x="8" y="8" fill-opacity=".3"></rect></g></svg>`,
@@ -39,7 +42,8 @@ picks.forEach(pick => {
       openModal();
       return;
     }
-    // Remove 'selected' from all picks
+    // Remove 'selected' from all picks (and from the ban cards)
+    clearBanSelection();
     picks.forEach(p => p.classList.remove('selected'));
     picks.forEach(p => p.classList.remove('blinking'));
     // Add 'selected' to the clicked pick
@@ -282,6 +286,7 @@ function selectNextAvailablePick(isAlly) {
   function selectFromTeam(teamItems) {
     for (const item of teamItems) {
       if (!item.style.backgroundImage) {
+        clearBanSelection();
         item.classList.add('selected', 'blinking');
         return item;
       }
@@ -582,7 +587,7 @@ function populateDraftTable(draftData) {
     // Create the champion cell with image and name
     const championCell = document.createElement('td');
     const championImage = document.createElement('img');
-    championImage.src = `https://ddragon.leagueoflegends.com/cdn/15.8.1/img/champion/${item.championImageName}.png`;
+    championImage.src = `https://ddragon.leagueoflegends.com/cdn/`+patch+`.1/img/champion/${item.championImageName}.png`;
     championImage.alt = item.champion;
     championImage.classList.add('champion-image');
     
@@ -645,6 +650,15 @@ function populateDraftTable(draftData) {
       const championName = row.getAttribute('data-champion');
       const laneType = row.getAttribute('data-lane');
       const championId = row.getAttribute('data-id');
+
+      // A ban card is selected: ban this champion instead of picking it
+      const selectedBan = document.querySelector('.card.selected');
+      if (selectedBan && championName) {
+        setBan(selectedBan, championId, championName);
+        clear_search_input();
+        getRecos();
+        return;
+      }
       
       // Find the currently selected pick
       const selectedPick = document.querySelector('.team-item.selected');
@@ -688,6 +702,59 @@ function populateDraftTable(draftData) {
   sortTable(6,change_order=false);
 }
 
+// FILTER SETTINGS (min playrate + Champion's Strength)
+const minPlayrateInput = document.getElementById('min-playrate');
+const strengthToggle = document.getElementById('strength-toggle');
+const settingsKey = 'draftSettings';
+
+function getSettings() {
+  let minPlayrate = parseFloat(minPlayrateInput.value);
+  if (isNaN(minPlayrate) || minPlayrate < 0) minPlayrate = 0;
+  if (minPlayrate > 100) minPlayrate = 100;
+  return {
+    min_playrate: minPlayrate,
+    use_champion_strength: strengthToggle.checked
+  };
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem(settingsKey, JSON.stringify(getSettings()));
+  } catch (e) { /* storage unavailable: ignore */ }
+}
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(settingsKey));
+    if (saved) {
+      minPlayrateInput.value = saved.min_playrate ?? 0;
+      strengthToggle.checked = saved.use_champion_strength ?? true;
+    }
+  } catch (e) { /* corrupted storage: keep defaults */ }
+}
+loadSettings(); // before the first analyseTeams()/getRecos() call
+
+// Playrate: wait for the user to stop typing before querying the server
+let playrateTimer;
+minPlayrateInput.addEventListener('input', () => {
+  clearTimeout(playrateTimer);
+  playrateTimer = setTimeout(() => {
+    saveSettings();
+    getRecos();
+  }, 400);
+});
+
+// Champion's Strength: affects both the team analysis and the recommendations
+strengthToggle.addEventListener('change', () => {
+  saveSettings();
+  analyseTeams();
+  getRecos();
+  const modalOverlayEl = document.getElementById('modalOverlay');
+  if (modalOverlayEl && modalOverlayEl.style.display !== 'none') {
+    updateGraph(); // refresh the open modal's graph too
+  }
+});
+
 function getTeams(){
   const team1Items = document.querySelectorAll(".team-item.ally");
   const team2Items = document.querySelectorAll(".team-item.opponent");
@@ -726,7 +793,7 @@ function analyseTeams(modalValues = undefined) {
       headers: {
           'Content-Type': 'application/json'
       },
-      body: JSON.stringify(teams)
+      body: JSON.stringify({ ...teams, use_champion_strength: getSettings().use_champion_strength })
   })
   .then(response => response.json())
   .then(data => {
@@ -743,9 +810,17 @@ function analyseTeams(modalValues = undefined) {
       //document.getElementById("team2-winrate").textContent = data.team_2_winrate.toFixed(2);
       ind_winrate = data.indiv_winrates;//
       update_indiv_winrates(ind_winrate);
+      renderAnalysis(data);
       if (modalValues != undefined) {
-        [championName, championId, laneType, team, team,selectedPick] = modalValues;
+        [championId, championName, laneType, team, team,selectedPick] = modalValues;
         const data = ind_winrate[team][championName];
+        if (team == "team1"){
+          team = "blue";
+        }
+        else{
+          team = "red";
+        }
+
         populateChampionModal(championName,championId,laneType,team,data);
         closeHandler = function() {removeChamp(selectedPick);}
         openModal();
@@ -782,7 +857,10 @@ function update_indiv_winrates(indiv_winrates){
 function getRecos() {
   teams = getTeams()
   const selectedPick = document.querySelector('.team-item.selected');
+  const selectedBanCard = document.querySelector('.card.selected');
   if (selectedPick && selectedPick.classList.contains('ally')) {
+    ispicking = true;
+  } else if (!selectedPick && selectedBanCard && selectedBanCard.dataset.side === 'blue') {
     ispicking = true;
   } else{
     ispicking = false;
@@ -793,7 +871,7 @@ function getRecos() {
       headers: {
           'Content-Type': 'application/json'
       },
-      body: JSON.stringify(teams)
+      body: JSON.stringify({ ...teams, ...getSettings(), bans: getBans() })
   })
   .then(response => response.json())
   .then(data => {
@@ -887,6 +965,340 @@ function animateFloat({element, startValue, endValue, duration = 3500}) {
   requestAnimationFrame(animate);
 }
 
+// BANS: 10 cards (5 per side). A card can be selected (blinking) like a pick,
+// then a click on a champion in the table bans it. Click on a banned card to unban.
+function getBans() {
+  return Array.from(document.querySelectorAll('.card'))
+    .filter(c => c.dataset.champion)
+    .map(c => c.dataset.champion);
+}
+
+function clearBanSelection() {
+  document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected', 'blinking'));
+}
+
+function selectBanCard(card) {
+  clearBanSelection();
+  // a ban card and a pick can't be selected at the same time
+  picks.forEach(p => p.classList.remove('selected', 'blinking'));
+  card.classList.add('selected', 'blinking');
+}
+
+// displayName: champion name as used everywhere else (e.g. "Vel'Koz"); imageName: ddragon id (e.g. "Velkoz")
+function setBan(card, displayName, imageName) {
+  card.dataset.champion = displayName;
+  card.dataset.image = imageName;
+  card.style.backgroundImage = `url('https://ddragon.leagueoflegends.com/cdn/${patch}.1/img/champion/${imageName}.png')`;
+  card.style.backgroundSize = 'cover';
+  card.style.backgroundPosition = 'center';
+  card.style.backgroundRepeat = 'no-repeat';
+  card.classList.add('has-ban');
+  card.classList.remove('selected', 'blinking');
+  card.title = `${displayName} - click to remove the ban`;
+
+  // go on with the next empty ban card of the same side, otherwise with the next pick
+  const side = card.dataset.side;
+  const next = Array.from(document.querySelectorAll(`.card[data-side="${side}"]`)).find(c => !c.dataset.champion);
+  if (next) {
+    next.classList.add('selected', 'blinking');
+  } else {
+    selectNextAvailablePick(side === 'blue');
+  }
+}
+
+function removeBan(card) {
+  delete card.dataset.champion;
+  delete card.dataset.image;
+  card.style.backgroundImage = '';
+  card.style.backgroundSize = '';
+  card.style.backgroundPosition = '';
+  card.style.backgroundRepeat = '';
+  card.classList.remove('has-ban', 'selected', 'blinking');
+  card.removeAttribute('title');
+}
+
+function handleBanCardClick(event) {
+  const card = event.currentTarget;
+  if (card.dataset.champion) {          // banned champion: unban it (back in the pool)
+    removeBan(card);
+    getRecos();
+  } else if (card.classList.contains('selected')) {   // selected empty card: deselect
+    card.classList.remove('selected', 'blinking');
+  } else {
+    selectBanCard(card);
+  }
+}
+
+// ANALYSIS TAB (summary of each category + recap per champion)
+const analysisIcons = {
+  champion: `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z"/></svg>`,
+  matchup: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg>`,
+  duo: `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.6 3-6 7-6s7 2.4 7 6z"/><circle cx="17" cy="9" r="2.8" fill-opacity=".7"/><path d="M17.5 14c2.8 0 4.5 2 4.5 5h-4.2c-.1-2-.8-3.6-2-4.6.5-.3 1-.4 1.7-.4z" fill-opacity=".7"/></svg>`,
+  winrate: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M6 16l4-5 3 3 5-7"/><path d="M15 7h3v3"/></svg>`
+};
+
+function escHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function avgOf(values) {
+  const v = values.filter(x => typeof x === 'number' && !isNaN(x));
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+}
+
+function fmtWr(v) {
+  return (typeof v === 'number' && !isNaN(v)) ? v.toFixed(2) : '—';
+}
+
+function wrColor(v) {
+  return (typeof v === 'number' && !isNaN(v)) ? rgbString(winrate2color(v)) : '#aaa';
+}
+
+// Champions currently picked in a team (read from the pick cards, in display order)
+function getPickedChampions(teamClass) {
+  const out = [];
+  document.querySelectorAll(`.team-item.${teamClass}`).forEach(item => {
+    const label = item.querySelector('.pick-label');
+    const laneIcon = item.querySelector('.lane-icon');
+    if (!label || !laneIcon) return;
+    const name = label.textContent.trim();
+    if (name.startsWith('PICK')) return;
+    out.push({ name, image: label.getAttribute('data-id'), lane: laneIcon.getAttribute('data-lane') });
+  });
+  return out;
+}
+
+let analysisMatchupMode = 'h2h'; // 'h2h' (same lane only) | 'all'
+let lastAnalysisData = null;
+
+// Head 2 Head / All toggle (event delegation: the tab content is re-rendered each time)
+const analysisContentEl = document.getElementById('analysis-content');
+if (analysisContentEl) {
+  analysisContentEl.addEventListener('click', e => {
+    const btn = e.target.closest('[data-an-mode]');
+    if (!btn) return;
+    analysisMatchupMode = btn.getAttribute('data-an-mode');
+    if (lastAnalysisData) renderAnalysis(lastAnalysisData);
+  });
+}
+
+function laneSvgFor(lane) {
+  return laneSvgs[capitalizeFirstLetter(String(lane || ''))] || '';
+}
+
+function champCellHtml(imageName, name) {
+  const img = `https://ddragon.leagueoflegends.com/cdn/${patch}.1/img/champion/${encodeURIComponent(imageName || '')}.png`;
+  return `<div class="an-champ-cell"><img src="${img}" alt="" /><span>${escHtml(name)}</span></div>`;
+}
+
+// Matchups: Blue Side champions (left) vs Red Side champions (right)
+function buildMatchupsHtml(blue) {
+  const mode = analysisMatchupMode;
+  const laneOrder = lane => {
+    const k = LANES.indexOf(String(lane).toLowerCase());
+    return k < 0 ? 99 : k;
+  };
+
+  let body = '';
+  let count = 0;
+  blue.picks.forEach((p, i) => {
+    const details = (blue.stats[i] || {}).matchup_details || {};
+    Object.entries(details)
+      .filter(([, d]) => typeof d.winrate === 'number' &&
+        (mode === 'all' || String(d.lane).toLowerCase() === String(p.lane).toLowerCase()))
+      .sort((a, b) => laneOrder(a[1].lane) - laneOrder(b[1].lane))
+      .forEach(([oppName, d]) => {
+        const wr = d.winrate;
+        const cat = escHtml(d.matchup || '');
+        count++;
+        body += `
+          <tr>
+            <td class="an-role">${laneSvgFor(p.lane)}</td>
+            <td class="an-champ">${champCellHtml(p.image, p.name)}</td>
+            <td style="color:${wrColor(wr)}">${fmtWr(wr)}</td>
+            <td class="an-cat ${cat}">${cat.toUpperCase()}</td>
+            <td class="an-role">${laneSvgFor(d.lane)}</td>
+            <td class="an-champ">${champCellHtml(d.name_id, oppName)}</td>
+            <td style="color:${wrColor(100 - wr)}">${fmtWr(100 - wr)}</td>
+          </tr>`;
+      });
+  });
+
+  if (count === 0) {
+    body = `<tr><td colspan="7" class="an-empty">No matchup yet</td></tr>`;
+  } else {
+    const left = blue.ov.matchups;
+    if (typeof left === 'number') {
+      const favored = left > 50;
+      body += `
+          <tr class="an-total-row">
+            <td colspan="3" class="an-sum" style="color:${wrColor(left)}">${fmtWr(left)}</td>
+            <td class="an-arrow ${favored ? 'loss-arrow' : 'win-arrow'}">${favored ? '←' : '→'}</td>
+            <td colspan="3" class="an-sum" style="color:${wrColor(100 - left)}">${fmtWr(100 - left)}</td>
+          </tr>`;
+    }
+  }
+
+  const btn = (m, label) =>
+    `<button type="button" class="an-mode-btn${mode === m ? ' active' : ''}" data-an-mode="${m}">${label}</button>`;
+
+  return `
+    <div class="an-section-header">
+      <div>
+        <h3 class="an-overview-title">Matchups</h3>
+        <div class="an-section-sub">Champion winrates normalized</div>
+      </div>
+      <div class="an-mode-toggle">${btn('h2h', 'Head 2 Head')}${btn('all', 'All')}</div>
+    </div>
+    <table class="an-table an-matchups">
+      <thead><tr><th>Role</th><th>Blue Side</th><th>Winrate</th><th>Matchup</th><th>Role</th><th>Red Side</th><th>Winrate</th></tr></thead>
+      <tbody>${body}</tbody>
+    </table>`;
+}
+
+// Duos of one side (each pair listed once)
+function buildDuosHtml(r) {
+  const seen = new Set();
+  let body = '';
+  let count = 0;
+  r.picks.forEach((p, i) => {
+    const syn = (r.stats[i] || {}).synergie_details || {};
+    Object.entries(syn).forEach(([partner, d]) => {
+      const key = [p.name, partner].sort().join('|');
+      if (seen.has(key) || typeof d.winrate !== 'number') return;
+      seen.add(key);
+      count++;
+      body += `
+          <tr>
+            <td class="an-role">${laneSvgFor(p.lane)}</td>
+            <td class="an-champ">${champCellHtml(p.image, p.name)}</td>
+            <td class="an-role">${laneSvgFor(d.lane)}</td>
+            <td class="an-champ">${champCellHtml(d.name_id, partner)}</td>
+            <td style="color:${wrColor(d.winrate)}">${fmtWr(d.winrate)}</td>
+          </tr>`;
+    });
+  });
+
+  if (count === 0) {
+    body = `<tr><td colspan="5" class="an-empty">No duo yet</td></tr>`;
+  } else if (typeof r.ov.duos === 'number') {
+    body += `
+          <tr class="an-total-row">
+            <td colspan="4"></td>
+            <td class="an-sum-left" style="color:${wrColor(r.ov.duos)}">${fmtWr(r.ov.duos)}</td>
+          </tr>`;
+  }
+
+  return `
+      <div class="an-overview">
+        <h3 class="an-overview-title">${r.title} Duos</h3>
+        <div class="an-section-sub">Champion winrates normalized</div>
+        <table class="an-table an-${r.color}">
+          <thead><tr><th>Role</th><th>Champion</th><th>Role</th><th>Champion</th><th>Winrate</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>`;
+}
+
+function renderAnalysis(data) {
+  const target = document.getElementById('analysis-content');
+  if (!target || !data || !data.indiv_winrates) return;
+  lastAnalysisData = data;
+
+  const sides = [
+    { color: 'blue', title: 'Blue Side', teamClass: 'ally', indiv: data.indiv_winrates.team1 || {}, teamWr: data.team_1_winrate },
+    { color: 'red',  title: 'Red Side',  teamClass: 'opponent', indiv: data.indiv_winrates.team2 || {}, teamWr: data.team_2_winrate }
+  ];
+
+  const rows = sides.map(side => {
+    const picks = getPickedChampions(side.teamClass);
+    const stats = picks.map(p => side.indiv[p.name] || {});
+    // Team values sent by the server: data.team_overview.team1 / team2
+    // ({champions, matchups, duos, total}). Falls back to the average of the picks
+    // (and to team_X_winrate for the total) when a value is missing.
+    const to = (data.team_overview || {})[side.color === 'blue' ? 'team1' : 'team2'] || {};
+    const num = (v, fallback) => (typeof v === 'number' && !isNaN(v)) ? v : fallback;
+    const avgBase = avgOf(stats.map(s => s.champ_winrate));
+    const avgMatchup = avgOf(stats.map(s => s.matchups_winrate));
+    const avgDuo = avgOf(stats.map(s => s.duos_winrate));
+    return {
+      ...side,
+      picks,
+      stats,
+      // banner: Champions / Matchups / Duos / Winrate
+      ov: {
+        champions: num(to.champions, avgBase),
+        matchups: num(to.matchups, avgMatchup),
+        duos: num(to.duos, avgDuo),
+        winrate: num(to.total, side.teamWr)
+      },
+      // last row of the table: Base / Matchup / Duo / Total (same team values)
+      tot: {
+        base: num(to.champions, avgBase),
+        matchup: num(to.matchups, avgMatchup),
+        duo: num(to.duos, avgDuo),
+        total: num(to.total, side.teamWr)
+      }
+    };
+  });
+
+  const statBox = (icon, title, value) => `
+    <div class="an-stat">
+      <div class="an-stat-icon">${icon}</div>
+      <div class="an-stat-text">
+        <div class="an-stat-title">${title}</div>
+        <div class="an-stat-value" style="color:${wrColor(value)}">${fmtWr(value)}</div>
+      </div>
+    </div>`;
+
+  const summaryHtml = rows.map(r => `
+    <div class="an-stats an-${r.color}">
+      ${statBox(analysisIcons.champion, 'Champions', r.ov.champions)}
+      ${statBox(analysisIcons.matchup, 'Matchups', r.ov.matchups)}
+      ${statBox(analysisIcons.duo, 'Duos', r.ov.duos)}
+      ${statBox(analysisIcons.winrate, 'Winrate', r.ov.winrate)}
+    </div>`).join('');
+
+  const overviewHtml = rows.map(r => {
+    const body = r.picks.length === 0
+      ? `<tr><td colspan="6" class="an-empty">No champion picked</td></tr>`
+      : r.picks.map((p, i) => {
+          const s = r.stats[i];
+          return `
+          <tr>
+            <td class="an-role">${laneSvgs[p.lane] || ''}</td>
+            <td class="an-champ">${champCellHtml(p.image, p.name)}</td>
+            <td style="color:${wrColor(s.champ_winrate)}">${fmtWr(s.champ_winrate)}</td>
+            <td style="color:${wrColor(s.matchups_winrate)}">${fmtWr(s.matchups_winrate)}</td>
+            <td style="color:${wrColor(s.duos_winrate)}">${fmtWr(s.duos_winrate)}</td>
+            <td style="color:${wrColor(s.ind_winrate)}">${fmtWr(s.ind_winrate)}</td>
+          </tr>`;
+        }).join('') + `
+          <tr class="an-total-row">
+            <td></td><td></td>
+            <td style="color:${wrColor(r.tot.base)}">${fmtWr(r.tot.base)}</td>
+            <td style="color:${wrColor(r.tot.matchup)}">${fmtWr(r.tot.matchup)}</td>
+            <td style="color:${wrColor(r.tot.duo)}">${fmtWr(r.tot.duo)}</td>
+            <td style="color:${wrColor(r.tot.total)}">${fmtWr(r.tot.total)}</td>
+          </tr>`;
+    return `
+      <div class="an-overview">
+        <h3 class="an-overview-title">${r.title} Overview</h3>
+        <table class="an-table an-${r.color}">
+          <thead><tr><th>Role</th><th>Champion</th><th>Base</th><th>Matchup</th><th>Duo</th><th>Total</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+
+  const duosHtml = rows.map(buildDuosHtml).join('');
+
+  target.innerHTML = `${summaryHtml}
+    <div class="an-overviews">${overviewHtml}</div>
+    ${buildMatchupsHtml(rows[0])}
+    <div class="an-overviews an-duos">${duosHtml}</div>`;
+}
+
 //GESTION DES TABS
 const tabDraft = document.getElementById('tab-draft');
 const tabAnalysis = document.getElementById('tab-analysis');
@@ -912,7 +1324,13 @@ tabAnalysis.addEventListener('click', () => {
 function sortTable(columnIndex,change_order=true) {
   const table = document.querySelector('.draft-table table');
   const rows = Array.from(table.rows).slice(1); // exclude header
-  const isNumeric = !isNaN(rows[0].cells[columnIndex].innerText);
+  if (rows.length === 0) return; // nothing to sort (e.g. min playrate filtered everything out)
+  // "10.25%" -> 10.25 ; returns null when the text is not a number (e.g. champion names)
+  const toNum = text => {
+    const n = parseFloat(String(text).replace('%', '').replace(',', '.'));
+    return isNaN(n) ? null : n;
+  };
+  const isNumeric = toNum(rows[0].cells[columnIndex].innerText) !== null;
   const hasAttribute = table.hasAttribute(`data-sort-${columnIndex}`);
   if(change_order && !hasAttribute){
     change_order = false;
@@ -941,7 +1359,11 @@ function sortTable(columnIndex,change_order=true) {
     const bText = b.cells[columnIndex].innerText.trim();
 
     if (isNumeric) {
-      return newDirection === 'asc' ? aText - bText : bText - aText;
+      const aNum = toNum(aText);
+      const bNum = toNum(bText);
+      // rows without a number always go last
+      if (aNum === null || bNum === null) return (aNum === null) - (bNum === null);
+      return newDirection === 'asc' ? aNum - bNum : bNum - aNum;
     } else {
       return newDirection === 'asc'
         ? aText.localeCompare(bText)
@@ -964,12 +1386,12 @@ function populateChampionModal(championName,champ_id, championLane,champion_team
   
   const portraitImg = document.querySelector('.champion-portrait img');
   if (portraitImg) {
-      portraitImg.src = `https://ddragon.leagueoflegends.com/cdn/15.1.1/img/champion/${champ_id}.png`;
+      portraitImg.src = `https://ddragon.leagueoflegends.com/cdn/`+patch+`.1/img/champion/${champ_id}.png`;
       portraitImg.alt = `${championName} Champion Portrait`;
   }
 
   const link_button = document.querySelector('.lolalytics-button');
-  link_button.onclick = function() {window.open(`https://lolalytics.com/lol/${champ_id.toLowerCase()}/build/`, '_blank');};
+  link_button.onclick = function() {window.open(`https://lolalytics.com/lol/${championName.toLowerCase()}/build/`, '_blank');};
   
   //TODO
   // if (championData.portraitBgColor) {
@@ -1193,7 +1615,7 @@ window.addEventListener('DOMContentLoaded', () => {
     card.className = 'card';
     card.dataset.index = i;
     card.dataset.side = 'blue';
-    card.addEventListener('click', handleCardClick);
+    card.addEventListener('click', handleBanCardClick);
     blueContainer.appendChild(card);
   }
   
@@ -1203,21 +1625,10 @@ window.addEventListener('DOMContentLoaded', () => {
     card.className = 'card';
     card.dataset.index = i;
     card.dataset.side = 'red';
-    card.addEventListener('click', handleCardClick);
+    card.addEventListener('click', handleBanCardClick);
     redContainer.appendChild(card);
   }
   
-  function handleCardClick(event) {
-    const card = event.currentTarget;
-    const side = card.dataset.side;
-    
-    if (side === 'blue') {
-      card.classList.toggle('blue-selected');
-    } else {
-      card.classList.toggle('red-selected');
-    }
-  }
-
   analyseTeams();
   getRecos();
 });
@@ -1256,7 +1667,6 @@ modalmatchupButtons.forEach(button => {
     updateGraph();
     // Optional: Do something based on selected value
     //const selectedValue = button.textContent;
-    //console.log("Selected:", selectedValue);
   });
 });
 
@@ -1323,7 +1733,8 @@ function updateGraph() {
         body: JSON.stringify({
             lane: lane,
             champion: champion,
-            lane2check: lane2check
+            lane2check: lane2check,
+            use_champion_strength: getSettings().use_champion_strength
         })
     })
     .then(response => response.text())  // because Flask sends back plain text (base64)

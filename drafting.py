@@ -19,24 +19,43 @@ def sort_by_winrate(data):
     return sorted_data
 
 # Extract the champions and lanes and calculate winrate for both teams
-def calculate_team_winrate(team1,team2):
+def calculate_team_winrate(team1,team2,use_champ_winrate=True):
     individual_winrates = {"team1":{},"team2":{}}
+    team_overview = {"team1":{},"team2":{}}
     global_rating = 0
+
+    current_rating = 0
     for i,element in enumerate(team1):
         lane = element['lane'].lower()
         champion = element['champion']
         champion_wr = champ_wr_pp[lane][champion]-tier_delta
-        ind_wr = winrate2rating(champion_wr/100)
-        global_rating+=ind_wr
-        individual_winrates['team1'][champion] = {'ind_winrate':ind_wr, 'champ_winrate':champion_wr, 'duos_winrate':0, 'matchups_winrate':0, 'matchup_details':{},'synergie_details':{}}
+        if use_champ_winrate:
+            ind_rating = winrate2rating(champion_wr/100)
+            global_rating+=ind_rating
+            current_rating += ind_rating
+            individual_winrates['team1'][champion] = {'ind_winrate':ind_rating, 'champ_winrate':champion_wr, 'duos_winrate':0, 'matchups_winrate':0, 'matchup_details':{},'synergie_details':{}}
+        else:
+            individual_winrates['team1'][champion] = {'ind_winrate': 0, 'champ_winrate':0, 'duos_winrate':0, 'matchups_winrate':0, 'matchup_details':{},'synergie_details':{}}
+    team_overview["team1"]["champions"] = round(rating2winrate(current_rating)*100,2)
 
+    
+    current_rating = 0
     for i,element in enumerate(team2):
         lane = element['lane'].lower()
         champion = element['champion']
-        champion_wr = champ_wr_pp[lane][champion]-tier_delta
-        ind_rating = winrate2rating(champion_wr/100)
-        individual_winrates['team2'][champion] = {'ind_winrate':ind_rating,'champ_winrate':champion_wr, 'duos_winrate':0, 'matchups_winrate':0, 'matchup_details':{},'synergie_details':{}}
-        global_rating-=ind_rating
+        if use_champ_winrate:
+            champion_wr = champ_wr_pp[lane][champion]-tier_delta
+            ind_rating = winrate2rating(champion_wr/100)
+            individual_winrates['team2'][champion] = {'ind_winrate':ind_rating,'champ_winrate':champion_wr, 'duos_winrate':0, 'matchups_winrate':0, 'matchup_details':{},'synergie_details':{}}
+            global_rating-=ind_rating
+            current_rating += ind_rating
+        else:
+            individual_winrates['team2'][champion] = {'ind_winrate': 0, 'champ_winrate':0, 'duos_winrate':0, 'matchups_winrate':0, 'matchup_details':{},'synergie_details':{}}
+    team_overview["team2"]["champions"] = round(rating2winrate(current_rating)*100,2)
+
+
+    current_rating = 0
+    current_rating2 = 0
 
     for i,element in enumerate(team1):
         lane = element['lane'].lower()
@@ -49,13 +68,14 @@ def calculate_team_winrate(team1,team2):
             w_matchup = d2+50#matchup_dic[lane][champion][lane2][champion2]-tier_delta
             matchup_rating = winrate2rating(w_matchup/100)
             global_rating+=matchup_rating
+            current_rating+=matchup_rating
             individual_winrates['team1'][champion]['ind_winrate'] += matchup_rating/2
             individual_winrates['team1'][champion]['matchups_winrate'] += matchup_rating/2
             individual_winrates['team1'][champion]['matchup_details'][champion2] = {'name_id':name_to_id[champion2],'lane':lane2,'winrate':round(rating2winrate(matchup_rating)*100,2),'matchup':categorize(d2,p10,p30,p70,p90)}
             individual_winrates['team2'][champion2]['ind_winrate'] -= matchup_rating/2
             individual_winrates['team2'][champion2]['matchups_winrate'] -= matchup_rating/2
             individual_winrates['team2'][champion2]['matchup_details'][champion] = {'name_id':name_to_id[champion],'lane':lane,'winrate':round(rating2winrate(-matchup_rating)*100,2),'matchup':categorize(-d2,p10,p30,p70,p90)}
-
+        
         #synergies
         for element2 in team1[i+1:]:
             lane2 = element2['lane'].lower()
@@ -66,6 +86,7 @@ def calculate_team_winrate(team1,team2):
             w_synergie = d2 +50#synergie_dic[lane][champion][lane2][champion2]-tier_delta
             synergie_rating = winrate2rating(w_synergie/100)
             global_rating+=synergie_rating
+            current_rating2+=synergie_rating
             individual_winrates['team1'][champion]['ind_winrate'] += synergie_rating/2
             individual_winrates['team1'][champion]['duos_winrate'] += synergie_rating/2
             individual_winrates['team1'][champion]['synergie_details'][champion2] = {'name_id':name_to_id[champion2],'lane':lane2,'winrate':round(rating2winrate(synergie_rating)*100,2),'synergie':categorize(d2,sp10,sp30,sp70,sp90)}
@@ -97,10 +118,20 @@ def calculate_team_winrate(team1,team2):
             individual_winrates[team][champ]['ind_winrate']=round(rating2winrate(individual_winrates[team][champ]['ind_winrate'])*100,2)
             individual_winrates[team][champ]['matchups_winrate']=round(rating2winrate(individual_winrates[team][champ]['matchups_winrate'])*100,2)
             individual_winrates[team][champ]['duos_winrate']=round(rating2winrate(individual_winrates[team][champ]['duos_winrate'])*100,2)
-    return round(rating2winrate(global_rating)*100,2), individual_winrates
+    
+    team_overview["team1"]["matchups"] = round(rating2winrate(current_rating)*100,2)
+    team_overview["team2"]["matchups"] = round(rating2winrate(-current_rating)*100,2)
+
+    team_overview["team1"]["duos"] = round(rating2winrate(current_rating2)*100,2)
+    team_overview["team2"]["duos"] = round(rating2winrate(-current_rating2)*100,2)
+
+    team_overview["team1"]["total"] = round(rating2winrate(global_rating)*100,2)
+    team_overview["team2"]["total"] = round(rating2winrate(-current_rating2)*100,2)
+    
+    return round(rating2winrate(global_rating)*100,2), individual_winrates, team_overview
 
 
-def get_champion_suggestions(ally_team,ennemy_team):
+def get_champion_suggestions(ally_team,ennemy_team,min_playrate=0,use_champion_strength=True, bans=[]):
     lanes = LANES.copy()
 
     for element in ally_team:
@@ -126,11 +157,13 @@ def get_champion_suggestions(ally_team,ennemy_team):
         for j,champion_data in enumerate(accepted_cpl[i]):
             champion = champion_data[0]
             pick_rate = champion_data[1]
-            if champion in champ_used:
+            if pick_rate<min_playrate:
+                continue
+            if champion in champ_used or champion in bans:
                 continue
             new_ally_team = ally_team.copy()
             new_ally_team.append({"champion": champion, "lane": lane})
-            new_team_winrate, _ = calculate_team_winrate(new_ally_team, ennemy_team)
+            new_team_winrate, _, _ = calculate_team_winrate(new_ally_team, ennemy_team,use_champ_winrate=use_champion_strength)
             #MATCHUP SCORE
             match_var = 0
             for k,lane2check in enumerate(LANES):
@@ -148,7 +181,11 @@ def get_champion_suggestions(ally_team,ennemy_team):
                     for c2face,pr,_ in accepted_cpl[k]:
                         if c2face in champ_used or c2face==champion:
                             continue
-                        d2 = matchup_d2_dic[lane][champion][lane2check][c2face][0]
+                        try:
+                            d2 = matchup_d2_dic[lane][champion][lane2check][c2face][0]
+                        except Exception as e:
+                            print(lane,champion,lane2check,c2face)
+                            raise e
                         d2m.append(d2)
                         mweights.append(pr)
                     match_var += weighted_variance(d2m,mweights)

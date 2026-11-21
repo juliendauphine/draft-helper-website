@@ -720,3 +720,330 @@ body {
   background-color: #3b82f6;
   color: white;
 }
+
+
+/* FILTER CONTROLS (min playrate + champion's strength) */
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 0 0 auto;
+  padding: 5px;
+}
+
+.playrate-filter,
+.strength-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-unit {
+  color: #ccc;
+}
+
+#min-playrate {
+  width: 70px;
+  padding: 8px;
+  background-color: #1c1c1e;
+  color: #fff;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 500;
+  border: 1px solid #3a3a3c;
+  border-radius: 5px;
+  outline: none;
+  text-align: right;
+  transition: border-color 0.2s ease;
+}
+
+#min-playrate:focus {
+  border-color: #3b82f6;
+}
+
+/* Slider (toggle switch) */
+.strength-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.strength-slider {
+  position: relative;
+  width: 46px;
+  height: 24px;
+  background-color: #3a3a3c;
+  border-radius: 24px;
+  transition: background-color 0.25s ease;
+  flex-shrink: 0;
+}
+
+.strength-slider::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background-color: #fff;
+  border-radius: 50%;
+  transition: transform 0.25s ease;
+}
+
+.strength-switch input:checked + .strength-slider {
+  background-color: #3b82f6;
+}
+
+.strength-switch input:checked + .strength-slider::before {
+  transform: translateX(22px);
+}
+
+.strength-switch input:focus-visible + .strength-slider {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+
+/* ANALYSIS TAB */
+#analysis-content {
+  padding: 20px 40px 80px; /* bottom space so the page doesn't end right on the last table */
+  box-sizing: border-box;
+}
+
+.an-stats {
+  display: flex;
+  background-color: #1a1a1a;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.an-stat {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-right: 1px solid #333;
+  min-width: 0;
+}
+
+.an-stat:last-child {
+  border-right: none;
+}
+
+.an-stat-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.an-stat-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.an-stats.an-blue .an-stat-icon { background-color: #3b82f6; }
+.an-stats.an-red .an-stat-icon { background-color: #ef4444; }
+
+.an-stat-title {
+  font-size: 18px;
+  color: #aaa;
+  text-transform: uppercase;
+}
+
+.an-stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.an-overviews {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.an-overview {
+  flex: 1 1 380px;
+  min-width: 0;
+}
+
+.an-overview-title {
+  margin: 0 0 6px;
+  font-size: 28px;
+  text-transform: uppercase;
+}
+
+.an-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1a1a1a;
+  border-radius: 6px;
+  border-top: 3px solid transparent;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.an-table.an-blue { border-top-color: #3b82f6; }
+.an-table.an-red { border-top-color: #ef4444; }
+
+.an-table th {
+  padding: 10px 8px;
+  text-align: left;
+  font-size: 18px;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.an-table td {
+  padding: 8px;
+  border-top: 1px solid #2a2a2a;
+  vertical-align: middle;
+}
+
+.an-role svg {
+  width: 28px;
+  height: 28px;
+  color: #fff;
+  display: block;
+}
+
+.an-champ {
+  text-transform: uppercase;
+}
+
+.an-champ-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 190px;
+}
+
+.an-champ img {
+  width: 34px;
+  height: 34px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.an-champ span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.an-total-row td {
+  border-top: 1px solid #444;
+}
+
+.an-empty {
+  text-align: center;
+  color: #777;
+  font-weight: 500;
+}
+
+
+/* ANALYSIS TAB: matchups & duos */
+.an-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin: 28px 0 6px;
+}
+
+.an-section-sub {
+  font-size: 16px;
+  color: #777;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.an-section-header .an-section-sub {
+  margin-bottom: 0;
+}
+
+.an-mode-toggle {
+  display: flex;
+  border: 1px solid #3a3a3c;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.an-mode-btn {
+  padding: 6px 12px;
+  background-color: #1c1c1e;
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.an-mode-btn.active {
+  background-color: #444;
+}
+
+.an-mode-btn:not(.active):hover {
+  background-color: #313136;
+}
+
+.an-matchups {
+  margin-bottom: 20px;
+}
+
+.an-cat {
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.an-arrow {
+  text-align: center;
+  font-size: 25px;
+}
+
+.an-sum {
+  text-align: center;
+  font-size: 30px;
+}
+
+.an-duos {
+  margin-top: 10px;
+}
+
+
+/* The center column scrolls when the Analysis tab is taller than the screen
+   (html/body have overflow: hidden, so the bottom was being cut off) */
+.spacer {
+  overflow-y: auto;
+}
+
+
+/* BANS */
+.card.selected {
+  border-color: #fff;
+}
+
+.card.has-ban {
+  background-size: cover;
+  background-position: center;
+}
+
+.blue-side .card.has-ban { border-color: #3b82f6; }
+.red-side .card.has-ban { border-color: #ef4444; }
+
+.card.has-ban:hover {
+  opacity: 0.7; /* hint: click to remove the ban */
+}

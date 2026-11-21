@@ -35,7 +35,7 @@ FILES = {
     # "1YB9wDmzJrf4OKTfRluDwL84U08e2jx20": "lolalytics_data_15.5_emerald_plus_all.json",
     # "1eSeDp_Amyd7EBbPLpxRa3Hjf0fmZdaxR": "lolalytics_data_15.6_emerald_plus_all.json",
     # "1Ot3GmOLQecbdCXMQgHaNykqf1ODxWQFt": "lolalytics_data_15.7_emerald_plus_all.json",
-    "16bmlC4OQsycyP4dIaP2OE0Tt9Z7kgezb": "lolalytics_data_15.8_emerald_plus_all.json",
+    "16bmlC4OQsycyP4dIaP2OE0Tt9Z7kgezb": "lolalytics_data_15.17_emerald_plus_all.json",#2 change
     "1xUpsyqm4FElsNixb0uIJ-QhBHuREMBI9": "matchup_d2_data.json",
     "1WTi9Ubda_txMuHP33BD-hpO9xzDjNBAG": "synergie_d2_data.json",
 }
@@ -54,7 +54,7 @@ def list2dic(list,accepted_cpl):
     return final_dic
 
 
-url = "https://ddragon.leagueoflegends.com/cdn/15.8.1/data/en_US/champion.json"
+url = "https://ddragon.leagueoflegends.com/cdn/15.17.1/data/en_US/champion.json"
 response = requests.get(url)
 champion_data = response.json()
 
@@ -63,15 +63,15 @@ name_to_id = {}
 for champ_id, champ_info in champion_data['data'].items():
     name_to_id[champ_info['name']] = champ_info['id']
 
-patches = ['15.8']
+patches = ['15.17']
 
-# patches2 = ['15.8','15.7','15.6','15.5','15.4','15.3','15.2','15.1']
+patches2 = ['15.17','15.16','15.15','15.14','15.13','15.12','15.11','15.10','15.8','15.7','15.6','15.5','15.4','15.3','15.2','15.1']
 
-patches_data = get_patches_data(patches)
+patches_data = get_patches_data(patches2)
 
-#accepted_cpl = get_relevent_champions(patches2,patches_data,min_playrate=0.2,patch_penality=0)
-with open('accepted_cpl.json', 'r') as f:
-    accepted_cpl = json.load(f)
+accepted_cpl = get_relevent_champions(patches2,patches_data,min_playrate=0.2,patch_penality=0)
+# with open('accepted_cpl.json', 'r') as f:
+#     accepted_cpl = json.load(f)
 
 champ_wr_pp =  get_true_winrate_per_patch(patches_data,patches,accepted_cpl)[0]
 

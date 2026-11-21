@@ -18,11 +18,12 @@ def analyse():
     # Get the selected champions and lanes for both teams (Assuming they are sent as JSON)
     team_1 = request.json.get('team1', [])
     team_2 = request.json.get('team2', [])
+    use_champion_strength = request.json.get('use_champion_strength', True)
 
     # print(team_1)
     # print(team_2)
 
-    team_1_winrate,individual_winrates = calculate_team_winrate(team_1,team_2)
+    team_1_winrate,individual_winrates, team_overview = calculate_team_winrate(team_1,team_2,use_champ_winrate=use_champion_strength)
     team_2_winrate = 100 - team_1_winrate
     # Sort the draft data again by winrate (in descending order) to update the champion list
     # sorted_champions = sort_by_winrate(draft_data)
@@ -32,8 +33,8 @@ def analyse():
     return jsonify({
         'team_1_winrate': team_1_winrate,
         'team_2_winrate': team_2_winrate,#,
-        'indiv_winrates':individual_winrates
-        #'champion_list': sorted_champions  # New champion list for populating the table
+        'indiv_winrates':individual_winrates,
+        'team_overview':team_overview
     })
 
 @app.route('/reco', methods=['POST'])
@@ -46,8 +47,13 @@ def reco():
     else:
         ally_team = request.json.get('team2', [])
         opponent_team = request.json.get('team1', [])
+
+    min_playrate = request.json.get('min_playrate', 0)
+    use_champion_strength = request.json.get('use_champion_strength', True)
+
+    bans = request.json.get('bans', [])
     
-    draft_data = get_champion_suggestions(ally_team,opponent_team)
+    draft_data = get_champion_suggestions(ally_team,opponent_team,min_playrate=min_playrate,use_champion_strength=use_champion_strength, bans=bans)
     
     # Sort the draft data again by winrate (in descending order) to update the champion list
     sorted_champions = sort_by_winrate(draft_data)
