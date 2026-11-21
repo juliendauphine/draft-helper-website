@@ -218,24 +218,6 @@ def get_champion_suggestions(ally_team,ennemy_team,min_playrate=0,use_champion_s
             syn_var /= 4
             svars.append(syn_var)    
 
-            # champion_wr = champ_wr_pp[lane][champion]-tier_delta
-            # ind_rating = winrate2rating(champion_wr/100)
-            # #matchups
-            # for element2 in ennemy_team:
-            #     lane2 = element2['lane'].lower()
-            #     champion2 = element2['champion']
-            #     w_matchup = matchup_dic[lane][champion][lane2][champion2]-tier_delta
-            #     matchup_rating = winrate2rating(w_matchup/100)
-            #     ind_rating+=matchup_rating
-            # #synergies
-            # for element2 in ally_team:
-            #     lane2 = element2['lane'].lower()
-            #     champion2 = element2['champion']
-            #     #add
-            #     w_synergie = synergie_dic[lane][champion][lane2][champion2]-tier_delta
-            #     synergie_rating = winrate2rating(w_synergie/100)
-            #     ind_rating+=synergie_rating
-            # ind_winrate = round(rating2winrate(ind_rating)*100,2)
             champion_line = {"lane":lane_name,"champion":champion,"winrate":str(new_team_winrate)+"%","championImageName": name_to_id[champion],"matchupVarScore":match_var,"synergieVarScore":syn_var,"pickrate":round(pick_rate,2)}
             draft_data.append(champion_line)
     for line in draft_data:

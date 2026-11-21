@@ -6,6 +6,7 @@ from analysis import get_overall_tier_winrate
 from utils import LANES
 import requests
 import json
+import pickle
 import os
 
 def download_data_from_gdrive(file_id, output_path):
@@ -28,16 +29,10 @@ DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
 FILES = {
-    # "1LQ2QIRBhmWnbFbhYEVBad8rpQBXvatSW": "lolalytics_data_15.1_emerald_plus_all.json",
-    # "1JCROLg--z3sCcGKuRy3WXo1MAxr-tVFL": "lolalytics_data_15.2_emerald_plus_all.json",
-    # "1-aU4jBkx5nj1QJoDmwUggcqMHecsJQXr": "lolalytics_data_15.3_emerald_plus_all.json",
-    # "1EDAQnlRNmyVu4VGL4vcS5n23c3mgBnfe": "lolalytics_data_15.4_emerald_plus_all.json",
-    # "1YB9wDmzJrf4OKTfRluDwL84U08e2jx20": "lolalytics_data_15.5_emerald_plus_all.json",
-    # "1eSeDp_Amyd7EBbPLpxRa3Hjf0fmZdaxR": "lolalytics_data_15.6_emerald_plus_all.json",
-    # "1Ot3GmOLQecbdCXMQgHaNykqf1ODxWQFt": "lolalytics_data_15.7_emerald_plus_all.json",
-    "16bmlC4OQsycyP4dIaP2OE0Tt9Z7kgezb": "lolalytics_data_15.17_emerald_plus_all.json",#2 change
+    "1IRfOvfR31A3RG6X150QvTH5szXlrzf50": "accepted_cpl.pkl",
+    "13ch5vi_74zAfm95SVdVW0w6s71V_OqVR": "lolalytics_data_15.17_emerald_plus_all.json",#2 change
     "1xUpsyqm4FElsNixb0uIJ-QhBHuREMBI9": "matchup_d2_data.json",
-    "1WTi9Ubda_txMuHP33BD-hpO9xzDjNBAG": "synergie_d2_data.json",
+    "1WTi9Ubda_txMuHP33BD-hpO9xzDjNBAG": "synergie_d2_data.json"
 }
 
 for file_id, name in FILES.items():
@@ -65,13 +60,19 @@ for champ_id, champ_info in champion_data['data'].items():
 
 patches = ['15.17']
 
-patches2 = ['15.17','15.16','15.15','15.14','15.13','15.12','15.11','15.10','15.8','15.7','15.6','15.5','15.4','15.3','15.2','15.1']
+#patches2 = ['15.17','15.16','15.15','15.14','15.13','15.12','15.11','15.10','15.8','15.7','15.6','15.5','15.4','15.3','15.2','15.1']
 
-patches_data = get_patches_data(patches2)
+patches_data = get_patches_data(patches)
 
-accepted_cpl = get_relevent_champions(patches2,patches_data,min_playrate=0.2,patch_penality=0)
-# with open('accepted_cpl.json', 'r') as f:
-#     accepted_cpl = json.load(f)
+#accepted_cpl = get_relevent_champions(patches2,patches_data,min_playrate=0.2,patch_penality=0)
+
+# with open("data/accepted_cpl.pkl", "wb") as f:
+#     pickle.dump(accepted_cpl, f)
+
+with open("data/accepted_cpl.pkl", "rb") as f:
+    accepted_cpl = pickle.load(f)
+
+#print(accepted_cpl==accepted_cpl2)
 
 champ_wr_pp =  get_true_winrate_per_patch(patches_data,patches,accepted_cpl)[0]
 
