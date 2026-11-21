@@ -1619,8 +1619,7 @@ window.addEventListener('DOMContentLoaded', () => {
     firstPick.classList.add('selected');
     firstPick.classList.add('blinking');
   }
-
-
+});   // <-- AJOUTER cette fermeture ici
 
 
 
@@ -1878,7 +1877,7 @@ function loadDraftFromURL() {
 
 
 
-
+window.addEventListener('DOMContentLoaded', () => {  
   // Create cards
   const blueContainer = document.getElementById('blue-side');
   const redContainer = document.getElementById('red-side');
