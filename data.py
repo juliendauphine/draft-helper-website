@@ -9,21 +9,71 @@ import json
 import pickle
 import os
 
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+
+
 def download_data_from_gdrive(file_id, output_path):
-    # Check if the file already exists
     if os.path.exists(output_path):
         print(f"File already exists: {output_path}")
         return
 
-    # Otherwise, download it from Google Drive
-    url = f"https://drive.google.com/uc?export=download&id={file_id}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        with open(output_path, 'wb') as f:
-            f.write(response.content)
-        print(f"Downloaded: {output_path}")
+    session = requests.Session()
+
+    url = "https://drive.google.com/uc"
+    params = {
+        "export": "download",
+        "id": file_id
+    }
+
+    response = session.get(url, params=params)
+    response.raise_for_status()
+
+    # Parse Google's confirmation page
+    soup = BeautifulSoup(response.text, "html.parser")
+    form = soup.find("form", {"id": "download-form"})
+
+    if form:
+        download_url = urljoin(response.url, form["action"])
+
+        form_data = {
+            inp["name"]: inp.get("value", "")
+            for inp in form.find_all("input")
+            if inp.get("name")
+        }
+
+        response = session.get(
+            download_url,
+            params=form_data,
+            stream=True
+        )
     else:
-        print(f"Failed to download file ({response.status_code}): {output_path}")
+        # No confirmation page: download directly
+        response = session.get(
+            url,
+            params=params,
+            stream=True
+        )
+
+    response.raise_for_status()
+
+    content_type = response.headers.get("Content-Type", "")
+
+    if "text/html" in content_type.lower():
+        raise ValueError(
+            f"Still receiving HTML instead of the file. "
+            f"URL: {response.url}"
+        )
+
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+
+    with open(output_path, "wb") as f:
+        for chunk in response.iter_content(chunk_size=1024 * 1024):
+            if chunk:
+                f.write(chunk)
+
+    response.close()
+    print(f"Downloaded: {output_path}")
 
 DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
