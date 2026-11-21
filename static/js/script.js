@@ -341,7 +341,7 @@ function addChamp(row){
     const championId = row.getAttribute('data-id');
     
     // Find the currently selected pick
-    const selectedPick = document.querySelector('.team-item.selected');
+    const selectedPick = document.querySelector('.team-item.selected') || selectNextAvailablePick(true);
 
     if (championName && selectedPick) {
       // Set the background image
@@ -661,7 +661,7 @@ function populateDraftTable(draftData) {
       }
       
       // Find the currently selected pick
-      const selectedPick = document.querySelector('.team-item.selected');
+      const selectedPick = document.querySelector('.team-item.selected') || selectNextAvailablePick(true);
   
       if (championName && selectedPick) {
         // Set the background image
@@ -971,6 +971,21 @@ function getBans() {
   return Array.from(document.querySelectorAll('.card'))
     .filter(c => c.dataset.champion)
     .map(c => c.dataset.champion);
+}
+
+// Shown when every slot is filled: there is nowhere to put the clicked champion
+function showDraftFullHint() {
+  let el = document.getElementById('draft-hint');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'draft-hint';
+    el.style.cssText = 'position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#2a2a2c;color:#fff;border:1px solid #3a3a3c;border-radius:6px;padding:12px 18px;font-size:18px;z-index:2000;box-shadow:0 2px 10px rgba(0,0,0,.5)';
+    document.body.appendChild(el);
+  }
+  el.textContent = 'All 10 slots are filled: remove a champion (\u22ee menu) to pick another one.';
+  el.style.display = 'block';
+  clearTimeout(showDraftFullHint.timer);
+  showDraftFullHint.timer = setTimeout(() => { el.style.display = 'none'; }, 3500);
 }
 
 function clearBanSelection() {
