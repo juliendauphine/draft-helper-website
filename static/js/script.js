@@ -1605,33 +1605,7 @@ window.addEventListener('DOMContentLoaded', () => {
     firstPick.classList.add('blinking');
   }
 
-  // Create cards
-  const blueContainer = document.getElementById('blue-side');
-  const redContainer = document.getElementById('red-side');
-  
-  // Create 5 cards for blue side
-  for (let i = 0; i < 5; i++) {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.dataset.index = i;
-    card.dataset.side = 'blue';
-    card.addEventListener('click', handleBanCardClick);
-    blueContainer.appendChild(card);
-  }
-  
-  // Create 5 cards for red side
-  for (let i = 0; i < 5; i++) {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.dataset.index = i;
-    card.dataset.side = 'red';
-    card.addEventListener('click', handleBanCardClick);
-    redContainer.appendChild(card);
-  }
-  
-  analyseTeams();
-  getRecos();
-});
+
 
 
 
@@ -1756,4 +1730,167 @@ function updateGraph() {
 // When you click anywhere on the modal (to close it)
 modalImage.addEventListener('click', () => {
   modalImg.style.display = 'none';
+});
+
+
+
+//GPT
+// ======================================
+// SHARE DRAFT
+// ======================================
+
+// Récupère les champions avec leur poste et leur image Data Dragon
+function getTeamForShare(teamClass) {
+    return Array.from(
+        document.querySelectorAll(`.team-item.${teamClass}`)
+    ).map(slot => {
+        const label = slot.querySelector('.pick-label');
+        const laneIcon = slot.querySelector('.lane-icon');
+
+        if (!label || !laneIcon) return null;
+
+        const champion = label.textContent.trim();
+        const image = label.getAttribute('data-id');
+
+        if (champion.startsWith('PICK') || !image) return null;
+
+        return {
+            champion: champion,
+            image: image,
+            lane: laneIcon.getAttribute('data-lane')
+        };
+    });
+}
+
+// Génère le lien de partage
+async function shareDraft() {
+    const draft = {
+        version: 1,
+        team1: getTeamForShare('ally'),
+        team2: getTeamForShare('opponent')
+    };
+
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.searchParams.set('draft', JSON.stringify(draft));
+
+    try {
+        await navigator.clipboard.writeText(url.toString());
+        alert('Lien de la draft copié !');
+    } catch (error) {
+        window.prompt('Copie ce lien :', url.toString());
+    }
+}
+
+// Remplit une équipe depuis les données du lien
+function restoreTeamFromShare(teamClass, champions) {
+    const slots = Array.from(
+        document.querySelectorAll(`.team-item.${teamClass}`)
+    );
+
+    const validLanes = ['Top', 'Jungle', 'Middle', 'Bottom', 'Support'];
+
+    champions.forEach((champ, index) => {
+        if (!champ || index >= slots.length) return;
+
+        if (
+            typeof champ.champion !== 'string' ||
+            typeof champ.image !== 'string' ||
+            !/^[a-zA-Z0-9]+$/.test(champ.image) ||
+            !validLanes.includes(champ.lane)
+        ) return;
+
+        const slot = slots[index];
+
+        const splashUrl =
+            `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champ.image}_0.jpg`;
+
+        slot.style.backgroundImage =
+            `linear-gradient(rgba(25,25,25,0.8) 0%, rgba(0,0,0,0) 50%, rgba(25,25,25,0.8) 100%), url('${splashUrl}')`;
+
+        slot.style.backgroundSize = 'cover';
+        slot.style.backgroundPosition = 'center 20%';
+        slot.style.backgroundRepeat = 'no-repeat';
+
+        const label = slot.querySelector('.pick-label');
+        label.textContent = champ.champion;
+        label.setAttribute('data-id', champ.image);
+
+        addLaneIcon(champ.lane, slot);
+        addIndividualWinrate(50, slot);
+    });
+}
+
+// Charge une draft depuis l'URL
+function loadDraftFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const rawDraft = params.get('draft');
+
+    if (!rawDraft) return false;
+
+    try {
+        const draft = JSON.parse(rawDraft);
+
+        if (
+            draft.version !== 1 ||
+            !Array.isArray(draft.team1) ||
+            !Array.isArray(draft.team2)
+        ) return false;
+
+        restoreTeamFromShare('ally', draft.team1);
+        restoreTeamFromShare('opponent', draft.team2);
+
+        // Supprime les anciennes sélections
+        picks.forEach(p => p.classList.remove('selected', 'blinking'));
+
+        // Sélectionne le prochain emplacement disponible
+        selectNextAvailablePick(true);
+
+        // Nettoie l'URL après le chargement de la draft
+        window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+        );
+
+        return true;
+
+    } catch (error) {
+        console.error('Erreur lors du chargement de la draft:', error);
+        return false;
+    }
+}
+
+
+
+
+  // Create cards
+  const blueContainer = document.getElementById('blue-side');
+  const redContainer = document.getElementById('red-side');
+  
+  // Create 5 cards for blue side
+  for (let i = 0; i < 5; i++) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.index = i;
+    card.dataset.side = 'blue';
+    card.addEventListener('click', handleBanCardClick);
+    blueContainer.appendChild(card);
+  }
+  
+  // Create 5 cards for red side
+  for (let i = 0; i < 5; i++) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.index = i;
+    card.dataset.side = 'red';
+    card.addEventListener('click', handleBanCardClick);
+    redContainer.appendChild(card);
+  }
+  
+  // Restore shared draft before the initial analysis
+  loadDraftFromURL();
+
+  analyseTeams();
+  getRecos();
 });
