@@ -28,7 +28,11 @@ def calculate_team_winrate(team1,team2,use_champ_winrate=True):
     for i,element in enumerate(team1):
         lane = element['lane'].lower()
         champion = element['champion']
-        champion_wr = champ_wr_pp[lane][champion]-tier_delta
+        try:
+            champion_wr = champ_wr_pp[lane][champion]-tier_delta
+        except Exception as e:
+            print(lane, champion)
+            raise e
         if use_champ_winrate:
             ind_rating = winrate2rating(champion_wr/100)
             global_rating+=ind_rating
