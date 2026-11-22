@@ -664,6 +664,7 @@ body {
 .ban-content {
   display: flex;
   flex: 1;
+  position: relative;   /* ← ajout : sert de repère pour centrer le badge */
 }
 
 .blue-side, .red-side {
@@ -1046,4 +1047,21 @@ body {
 
 .card.has-ban:hover {
   opacity: 0.7; /* hint: click to remove the ban */
+}
+
+.patch-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  padding: 10px 22px;      /* était 6px 14px */
+  font-size: 20px;         /* était 14px */
+  font-weight: bold;
+  white-space: nowrap;
+  color: #e5e7eb;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  pointer-events: none;
 }

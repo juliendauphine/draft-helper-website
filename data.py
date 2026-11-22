@@ -13,6 +13,9 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
 
+PATCH = "16.22"
+
+
 def download_data_from_gdrive(file_id, output_path):
     if os.path.exists(output_path):
         print(f"File already exists: {output_path}")
@@ -80,7 +83,7 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 FILES = {
     "1IRfOvfR31A3RG6X150QvTH5szXlrzf50": "accepted_cpl.pkl",
-    "13ch5vi_74zAfm95SVdVW0w6s71V_OqVR": "lolalytics_data_15.17_emerald_plus_all.json",#2 change
+    "1Iy4g2IVQ5PzKI9igRkwl_o2mm64d_Lo9": "lolalytics_data_16.22_emerald_plus_all.json",#2 change
     "1xUpsyqm4FElsNixb0uIJ-QhBHuREMBI9": "matchup_d2_data.json",
     "1WTi9Ubda_txMuHP33BD-hpO9xzDjNBAG": "synergie_d2_data.json"
 }
@@ -99,7 +102,7 @@ def list2dic(list,accepted_cpl):
     return final_dic
 
 
-url = "https://ddragon.leagueoflegends.com/cdn/15.17.1/data/en_US/champion.json"
+url = "https://ddragon.leagueoflegends.com/cdn/"+PATCH+".1/data/en_US/champion.json"
 response = requests.get(url)
 champion_data = response.json()
 
@@ -108,13 +111,13 @@ name_to_id = {}
 for champ_id, champ_info in champion_data['data'].items():
     name_to_id[champ_info['name']] = champ_info['id']
 
-patches = ['15.17']
+patches = ['16.22']
 
-#patches2 = ['15.17','15.16','15.15','15.14','15.13','15.12','15.11','15.10','15.8','15.7','15.6','15.5','15.4','15.3','15.2','15.1']
+#patches2 = ['16.22','16.20','16.19','16.18','16.17','16.16','16.15','15.22','15.21','15.20','15.19','15.18','15.17','15.16','15.15','15.14','15.13','15.12','15.11','15.10','15.8','15.7','15.6','15.5','15.4','15.3','15.2','15.1']
 
 patches_data = get_patches_data(patches)
 
-#accepted_cpl = get_relevent_champions(patches2,patches_data,min_playrate=0.2,patch_penality=0)
+# accepted_cpl = get_relevent_champions(patches2,patches_data,min_playrate=0.2,patch_penality=0)
 
 # with open("data/accepted_cpl.pkl", "wb") as f:
 #     pickle.dump(accepted_cpl, f)

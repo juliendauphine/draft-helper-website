@@ -1,4 +1,4 @@
-let patch = '15.17'
+let patch = '16.22'
 
 
 // Mapping of lane types to their corresponding SVGs
@@ -1907,4 +1907,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   analyseTeams();
   getRecos();
+});
+
+
+window.addEventListener('DOMContentLoaded', () => {
+  const badge = document.getElementById('patch-badge');
+  if (badge) badge.textContent = `Patch ${patch}`;
 });
