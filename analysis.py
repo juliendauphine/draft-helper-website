@@ -26,7 +26,9 @@ def get_patches_data(patches,region='all',rank='emerald_plus'):
         
     return patches_data
 
-def get_relevent_champions(patches,patches_data,min_playrate=0.5,patch_min_playrate=1,champion2rem=[],patch_penality=-100):
+import numpy as np
+
+def get_relevent_champions(patches,patches_data,min_playrate=0.5,patch_min_playrate=1,champion2rem=[],patch_penality=-100,n_last_patch_used=1):
 
     champions_per_lane = [set() for _ in LANES]
     for patch in patches:
@@ -48,8 +50,13 @@ def get_relevent_champions(patches,patches_data,min_playrate=0.5,patch_min_playr
                     #playrates.append(0.1)
                     playrates.append(patch_penality)#REMOVE CHAMPION WITH PLAYRATE TOO LOW ON ONE OF THE PATCH if -100
             moyenne = sum(playrates) / float(len(playrates))
-            if moyenne>min_playrate or playrates[0]>patch_min_playrate:#if champ is relevent this patch #NEWADD
-                accepted_cpl[i].append((laner,moyenne,playrates))
+            try:
+                if (moyenne>min_playrate or playrates[0]>patch_min_playrate) and any(x> 0 for x in playrates[:n_last_patch_used]):#if champ is relevent this patch #NEWADD and at least one win rate dispo
+                    accepted_cpl[i].append((laner,moyenne,playrates))
+            except Exception as e:
+                print(playrates[:n_last_patch_used])
+                raise e
+            
 
     for i,l in enumerate(LANES):
         #print(l)
