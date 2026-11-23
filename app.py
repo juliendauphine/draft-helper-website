@@ -3,7 +3,8 @@ import io
 import base64
 from flask import Response
 from drafting import calculate_team_winrate, get_champion_suggestions, sort_by_winrate, get_matchup_performance_graph, get_synergie_performance_graph
-
+from drafting import get_scaling_over_time, get_damage_share
+import numpy as np
 
 app = Flask(__name__)
 
@@ -30,11 +31,36 @@ def analyse():
     # print(team_1_winrate,team_2_winrate)
     #print(individual_winrates)
     #print(sorted_champions)
+    wrot1= get_scaling_over_time(team_1)
+    wrot2= get_scaling_over_time(team_2)
+
+    # # Moyenne globale des 14 valeurs
+    # moyenne = np.mean(np.concatenate([wrot1, wrot2]))
+
+    # # Décalage nécessaire pour atteindre 50
+    # decalage = moyenne - 50
+
+    # # Application du même décalage aux deux listes
+    # wrot1 = (np.array(wrot1) - decalage).tolist()
+    # wrot2 = (np.array(wrot2) - decalage).tolist()
+
+    dms = get_damage_share(team_1)
+    dms2 = get_damage_share(team_2)
+    print(dms)
+    print(dms2)
     return jsonify({
         'team_1_winrate': team_1_winrate,
         'team_2_winrate': team_2_winrate,#,
         'indiv_winrates':individual_winrates,
-        'team_overview':team_overview
+        'team_overview':team_overview,
+        'scaling': {
+            'team1': wrot1,
+            'team2': wrot2
+        },
+        'damage': {
+            'team1': {'physical': dms[0], 'magical': dms[1], 'true': dms[2]},
+            'team2': {'physical': dms2[0], 'magical': dms2[1], 'true': dms2[2]}
+        }
     })
 
 @app.route('/reco', methods=['POST'])

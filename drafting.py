@@ -1,6 +1,6 @@
 from lolstats import rating2winrate, winrate2rating
 from data import tier_delta,champ_wr_pp, synergie_d2_dic, matchup_d2_dic,patches_data, patches, accepted_cpl,name_to_id#matchup_dic, synergie_dic,draft_data
-from data import possible_champs
+from data import possible_champs, PATCH
 from utils import LANES, LANE2INDEX
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -17,6 +17,52 @@ def weighted_variance(values, weights):
 def sort_by_winrate(data):
     sorted_data = sorted(data, key=lambda x: float(x['winrate'].replace('%', '')), reverse=True)
     return sorted_data
+
+
+def get_scaling_over_time(team):
+    global_winrate_over_time = []
+    if len(team)==0:
+        return [50 for _ in range(7)]
+
+    for i in range(len(patches_data[PATCH][team[0]['lane'].lower()][team[0]['champion']]['WR_vs_length'])):
+        current_rating = 0
+        
+        for element in team:
+            lane = element['lane'].lower()
+            champion = element['champion']
+
+            wr = patches_data[PATCH][lane][champion]['WR_vs_length'][i]
+
+            champion_wr = champ_wr_pp[lane][champion]-tier_delta #true winrate
+            lola_champion_wr = patches_data[PATCH][lane][champion]['Win_perc']
+            delta_truth = champion_wr - lola_champion_wr
+            winrate_over_time = wr['winrate'] - delta_truth -tier_delta
+            ind_rating = winrate2rating(winrate_over_time/100)
+            current_rating += ind_rating/5.0
+        
+        global_winrate_over_time.append(round(rating2winrate(current_rating)*100,2))
+    return global_winrate_over_time
+    
+def get_damage_share(team):
+    total_physical_damage = 0
+    total_magic_damage = 0
+    total_true_damage = 0
+
+    for element in team:
+        lane = element['lane'].lower()
+        champion = element['champion']
+        rs = patches_data[PATCH][lane][champion]['Raw_stats']
+        total_physical_damage+=rs['Physical Damage'][0]
+        total_magic_damage+=rs['Magic Damage'][0]
+        total_true_damage+=rs['True Damage'][0]
+    total_damage = total_physical_damage+total_magic_damage+total_true_damage
+    if total_damage == 0:
+        return [33,33,34]
+    physical_damage_share = round((total_physical_damage/total_damage)*100,2)
+    magic_damage_share = round((total_magic_damage/total_damage)*100,2)
+    total_true_damage = 100-physical_damage_share-magic_damage_share
+    return [physical_damage_share,magic_damage_share,total_true_damage]
+
 
 # Extract the champions and lanes and calculate winrate for both teams
 def calculate_team_winrate(team1,team2,use_champ_winrate=True):

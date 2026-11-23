@@ -1215,6 +1215,145 @@ function buildDuosHtml(r) {
       </div>`;
 }
 
+ 
+// ---------- START ----------
+// SCALING: team winrate over game length. Points come from /analyse (data.scaling)
+const SCALING_LABELS = ['0-15', '15-20', '20-25', '25-30', '30-35','35-40','40+'];
+ 
+// Accepts [v1, ..., v5] or { "0-20": v1, "20-25": v2, ... }
+function normalizeScaling(raw) {
+  let labels, values;
+  if (Array.isArray(raw)) {
+    values = raw.map(Number);
+    labels = values.map((_, i) => SCALING_LABELS[i] ?? String(i + 1));
+  } else if (raw && typeof raw === 'object') {
+    let keys = Object.keys(raw);
+    // Flask sorts JSON keys alphabetically: put them back in game-length order
+    if (keys.every(k => !isNaN(parseFloat(k)))) keys.sort((a, b) => parseFloat(a) - parseFloat(b));
+    labels = keys;
+    values = keys.map(k => Number(raw[k]));
+  } else {
+    return null;
+  }
+  return values.length && values.every(v => !isNaN(v)) ? { labels, values } : null;
+}
+ 
+function buildScalingHtml(data) {
+  const sc = data.scaling || {};
+  const ov = data.team_overview || {};
+  const blue = normalizeScaling(sc.team1 ?? sc.team_1 ?? (ov.team1 || {}).scaling);
+  const red = normalizeScaling(sc.team2 ?? sc.team_2 ?? (ov.team2 || {}).scaling);
+  if (!blue && !red) return '';
+ 
+  const series = [
+    { s: blue, color: '#3b82f6', name: 'Blue Side' },
+    { s: red, color: '#ef4444', name: 'Red Side' }
+  ].filter(x => x.s);
+ 
+  const labels = series.reduce((acc, x) => x.s.labels.length > acc.length ? x.s.labels : acc, []);
+  const n = labels.length;
+  const all = series.flatMap(x => x.s.values).concat(50);
+  let yMin = Math.floor(Math.min(...all));
+  let yMax = Math.ceil(Math.max(...all));
+  if (yMax - yMin < 2) { yMin -= 1; yMax += 1; }
+  const step = Math.ceil((yMax - yMin) / 8);
+ 
+  const W = 620, H = 300, L = 44, R = 24, T = 16, B = 34;
+  const pw = W - L - R, ph = H - T - B;
+  const px = i => n === 1 ? L + pw / 2 : L + (i * pw) / (n - 1);
+  const py = v => T + ph - ((v - yMin) / (yMax - yMin)) * ph;
+ 
+  let grid = '';
+  for (let v = yMin; v <= yMax; v += step) {
+    const isMid = v === 50;
+    grid += `<line x1="${L}" x2="${W - R}" y1="${py(v)}" y2="${py(v)}" stroke="${isMid ? '#ddd' : '#3a3a3c'}" stroke-width="1"/>`;
+    grid += `<text x="${L - 8}" y="${py(v) + 6}" text-anchor="end" fill="#fff" font-size="18" font-weight="700">${v}</text>`;
+  }
+  labels.forEach((lab, i) => {
+    grid += `<line x1="${px(i)}" x2="${px(i)}" y1="${T}" y2="${T + ph}" stroke="#3a3a3c" stroke-width="1"/>`;
+    grid += `<text x="${px(i)}" y="${H - 8}" text-anchor="middle" fill="#fff" font-size="18" font-weight="700">${escHtml(lab)}</text>`;
+  });
+ 
+  const lines = series.map(({ s, color, name }) => {
+    const pts = s.values.map((v, i) => `${px(i)},${py(v)}`).join(' ');
+    const dots = s.values.map((v, i) =>
+      `<circle cx="${px(i)}" cy="${py(v)}" r="10" fill="transparent"><title>${name} - ${escHtml(labels[i] ?? '')}: ${v.toFixed(2)}</title></circle>`
+    ).join('');
+    return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>${dots}`;
+  }).join('');
+ 
+  return `
+    <div class="an-section-header">
+      <div>
+        <h3 class="an-overview-title">Scaling</h3>
+        <div class="an-section-sub">Team winrate normalized</div>
+      </div>
+    </div>
+    <div class="an-scaling">
+      <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Team winrate by game length">${grid}${lines}</svg>
+    </div>`;
+}
+ 
+// ---------- END ----------
+
+// DAMAGE DISTRIBUTION: physical / magical / true damage share of each team (data.damage from /analyse)
+const DAMAGE_TYPES = [
+  { key: 'physical', label: 'Physical', aliases: ['physical', 'physical_damage', 'phys', 'ad'] },
+  { key: 'magical',  label: 'Magical',  aliases: ['magical', 'magical_damage', 'magic', 'magic_damage', 'ap'] },
+  { key: 'true',     label: 'True',     aliases: ['true', 'true_damage', 'truedamage'] }
+];
+ 
+// Accepts { physical, magical, true } (several key spellings) or [physical, magical, true].
+// Values can be percentages, fractions or raw damage: they are re-scaled to sum to 100.
+function normalizeDamage(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const values = DAMAGE_TYPES.map((t, i) => {
+    if (Array.isArray(raw)) return Number(raw[i]);
+    const alias = t.aliases.find(a => raw[a] !== undefined);
+    return alias ? Number(raw[alias]) : NaN;
+  });
+  if (values.every(v => isNaN(v))) return null;
+  const clean = values.map(v => (isNaN(v) || v < 0) ? 0 : v);
+  const total = clean.reduce((a, b) => a + b, 0);
+  if (total <= 0) return null;
+  return clean.map(v => (v / total) * 100);
+}
+ 
+function buildDamageHtml(data) {
+  const dmg = data.damage ?? data.damage_distribution ?? {};
+  const ov = data.team_overview || {};
+  const t1 = ov.team1 || {}, t2 = ov.team2 || {};
+  const blue = normalizeDamage(dmg.team1 ?? dmg.team_1 ?? t1.damage ?? t1.damage_distribution);
+  const red = normalizeDamage(dmg.team2 ?? dmg.team_2 ?? t2.damage ?? t2.damage_distribution);
+  if (!blue && !red) return '';
+ 
+  const row = (title, color, pcts) => {
+    if (!pcts) {
+      return `<div class="an-damage-row"><div class="an-damage-team" style="color:${color}">${title}</div><div class="an-damage-bar an-damage-empty">No data</div></div>`;
+    }
+    const segs = DAMAGE_TYPES.map((t, i) => pcts[i] <= 0 ? '' : `
+        <div class="an-damage-seg an-dmg-${t.key}" style="width:${pcts[i]}%" title="${t.label}: ${pcts[i].toFixed(1)}%">${pcts[i] >= 7 ? Math.round(pcts[i]) + '%' : ''}</div>`).join('');
+    return `<div class="an-damage-row"><div class="an-damage-team" style="color:${color}">${title}</div><div class="an-damage-bar">${segs}</div></div>`;
+  };
+ 
+  const legend = DAMAGE_TYPES.map(t =>
+    `<span><i class="an-legend-dot an-dmg-${t.key}"></i>${t.label}</span>`).join('');
+ 
+  return `
+    <div class="an-section-header">
+      <div>
+        <h3 class="an-overview-title">Damage Distribution</h3>
+        <div class="an-section-sub">Share of each team's damage</div>
+      </div>
+    </div>
+    <div class="an-damage">
+      ${row('Blue Side', '#3b82f6', blue)}
+      ${row('Red Side', '#ef4444', red)}
+      <div class="an-damage-legend">${legend}</div>
+    </div>`;
+}
+
+
 function renderAnalysis(data) {
   const target = document.getElementById('analysis-content');
   if (!target || !data || !data.indiv_winrates) return;
@@ -1236,6 +1375,7 @@ function renderAnalysis(data) {
     const avgBase = avgOf(stats.map(s => s.champ_winrate));
     const avgMatchup = avgOf(stats.map(s => s.matchups_winrate));
     const avgDuo = avgOf(stats.map(s => s.duos_winrate));
+    
     return {
       ...side,
       picks,
@@ -1311,7 +1451,10 @@ function renderAnalysis(data) {
   target.innerHTML = `${summaryHtml}
     <div class="an-overviews">${overviewHtml}</div>
     ${buildMatchupsHtml(rows[0])}
-    <div class="an-overviews an-duos">${duosHtml}</div>`;
+    <div class="an-overviews an-duos">${duosHtml}</div>
+    ${buildScalingHtml(data)}
+    ${buildDamageHtml(data)}`;
+    
 }
 
 //GESTION DES TABS
