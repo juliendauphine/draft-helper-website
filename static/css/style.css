@@ -1151,3 +1151,64 @@ body {
   margin-right: 6px;
   vertical-align: middle;
 }
+
+.an-scaling-point {
+  cursor: pointer;
+}
+ 
+.an-scaling-point:hover {
+  fill: rgba(255, 255, 255, 0.18);
+}
+ 
+#an-scaling-tip {
+  position: fixed;
+  display: none;
+  z-index: 3000;
+  pointer-events: none;
+  min-width: 210px;
+  padding: 10px 12px;
+  background-color: #1c1c1e;
+  border: 1px solid #3a3a3c;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+}
+ 
+.an-tip-head {
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+ 
+.an-tip-total {
+  margin-bottom: 6px;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+ 
+.an-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+ 
+.an-tip-img {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+}
+ 
+.an-tip-name {
+  flex: 1;
+  text-transform: uppercase;
+}
+ 
+.an-tip-empty {
+  color: #777;
+  font-size: 16px;
+}

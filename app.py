@@ -31,8 +31,10 @@ def analyse():
     # print(team_1_winrate,team_2_winrate)
     #print(individual_winrates)
     #print(sorted_champions)
-    wrot1= get_scaling_over_time(team_1)
-    wrot2= get_scaling_over_time(team_2)
+    wrot1, indiv_scale= get_scaling_over_time(team_1)
+    wrot2,indiv_scale2= get_scaling_over_time(team_2)
+
+    print(indiv_scale)
 
     # # Moyenne globale des 14 valeurs
     # moyenne = np.mean(np.concatenate([wrot1, wrot2]))
@@ -46,8 +48,6 @@ def analyse():
 
     dms = get_damage_share(team_1)
     dms2 = get_damage_share(team_2)
-    print(dms)
-    print(dms2)
     return jsonify({
         'team_1_winrate': team_1_winrate,
         'team_2_winrate': team_2_winrate,#,
@@ -55,7 +55,11 @@ def analyse():
         'team_overview':team_overview,
         'scaling': {
             'team1': wrot1,
-            'team2': wrot2
+            'team2': wrot2,
+            'champions': {
+                'team1':indiv_scale,
+                'team_2':indiv_scale2
+            }
         },
         'damage': {
             'team1': {'physical': dms[0], 'magical': dms[1], 'true': dms[2]},

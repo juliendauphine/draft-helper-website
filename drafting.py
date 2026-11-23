@@ -21,10 +21,18 @@ def sort_by_winrate(data):
 
 def get_scaling_over_time(team):
     global_winrate_over_time = []
-    if len(team)==0:
-        return [50 for _ in range(7)]
+    individual_wr = {}
 
-    for i in range(len(patches_data[PATCH][team[0]['lane'].lower()][team[0]['champion']]['WR_vs_length'])):
+    if len(team)==0:
+        return [50 for _ in range(7)],individual_wr
+
+    for element in team:
+        champion = element['champion']
+        individual_wr[champion] = []
+
+    n = len(patches_data[PATCH][team[0]['lane'].lower()][team[0]['champion']]['WR_vs_length'])
+
+    for i in range(n):
         current_rating = 0
         
         for element in team:
@@ -36,12 +44,15 @@ def get_scaling_over_time(team):
             champion_wr = champ_wr_pp[lane][champion]-tier_delta #true winrate
             lola_champion_wr = patches_data[PATCH][lane][champion]['Win_perc']
             delta_truth = champion_wr - lola_champion_wr
+            
             winrate_over_time = wr['winrate'] - delta_truth -tier_delta
+            individual_wr[champion].append(winrate_over_time)
+
             ind_rating = winrate2rating(winrate_over_time/100)
-            current_rating += ind_rating/5.0
+            current_rating += ind_rating / len(team)
         
         global_winrate_over_time.append(round(rating2winrate(current_rating)*100,2))
-    return global_winrate_over_time
+    return global_winrate_over_time,individual_wr
     
 def get_damage_share(team):
     total_physical_damage = 0

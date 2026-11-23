@@ -1276,12 +1276,13 @@ function buildScalingHtml(data) {
  
   const lines = series.map(({ s, color, name }) => {
     const pts = s.values.map((v, i) => `${px(i)},${py(v)}`).join(' ');
+    const team = name === 'Blue Side' ? 'blue' : 'red';
     const dots = s.values.map((v, i) =>
-      `<circle cx="${px(i)}" cy="${py(v)}" r="10" fill="transparent"><title>${name} - ${escHtml(labels[i] ?? '')}: ${v.toFixed(2)}</title></circle>`
-    ).join('');
-    return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>${dots}`;
+        `<circle class="an-scaling-point" data-team="${team}" data-idx="${i}" data-label="${escHtml(labels[i] ?? '')}" data-value="${v}" cx="${px(i)}" cy="${py(v)}" r="10" fill="transparent"/>`
+      ).join('');
+      return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>${dots}`;
   }).join('');
- 
+
   return `
     <div class="an-section-header">
       <div>
@@ -1351,6 +1352,83 @@ function buildDamageHtml(data) {
       ${row('Red Side', '#ef4444', red)}
       <div class="an-damage-legend">${legend}</div>
     </div>`;
+}
+
+// SCALING TOOLTIP: hovering a point of the curve shows each champion's winrate at that point
+const SCALING_TEAMS = {
+  blue: { teamKey: 'team1', teamClass: 'ally', title: 'Blue Side', color: '#3b82f6' },
+  red:  { teamKey: 'team2', teamClass: 'opponent', title: 'Red Side', color: '#ef4444' }
+};
+let scalingTipKey = null;
+let scalingTipData = null;
+ 
+// Per-champion points: indiv_winrates.teamX[champion].scaling  (or scaling.champions.teamX[champion])
+function getChampionScaling(data, teamKey, champName) {
+  const raw = (((data.scaling || {}).champions || {})[teamKey] || {})[champName];
+  return normalizeScaling(raw);
+}
+ 
+function hideScalingTip() {
+  const tip = document.getElementById('an-scaling-tip');
+  if (tip) tip.style.display = 'none';
+  scalingTipKey = null;
+}
+ 
+function showScalingTip(point, clientX, clientY) {
+  const data = lastAnalysisData;
+  const team = SCALING_TEAMS[point.getAttribute('data-team')];
+  if (!data || !team) return;
+ 
+  let tip = document.getElementById('an-scaling-tip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'an-scaling-tip';
+    document.body.appendChild(tip);
+  }
+ 
+  const idx = Number(point.getAttribute('data-idx'));
+  const label = point.getAttribute('data-label');
+  const total = Number(point.getAttribute('data-value'));
+  const key = `${team.teamKey}:${idx}`;
+ 
+  // rebuild only when the hovered point (or the analysis data) changes
+  if (key !== scalingTipKey || data !== scalingTipData) {
+    scalingTipKey = key;
+    scalingTipData = data;
+    const rows = getPickedChampions(team.teamClass).map(p => {
+      const sc = getChampionScaling(data, team.teamKey, p.name);
+      let v = null;
+      if (sc) {
+        const li = sc.labels.indexOf(label);
+        v = sc.values[li >= 0 ? li : idx];
+      }
+      const img = `https://ddragon.leagueoflegends.com/cdn/${patch}.1/img/champion/${encodeURIComponent(p.image || '')}.png`;
+      return `<div class="an-tip-row"><img class="an-tip-img" src="${img}" alt="" /><span class="an-tip-name">${escHtml(p.name)}</span><b style="color:${wrColor(v)}">${fmtWr(v)}</b></div>`;
+    }).join('');
+    tip.innerHTML = `
+      <div class="an-tip-head"><span style="color:${team.color}">${team.title}</span> &middot; ${escHtml(label)}</div>
+      <div class="an-tip-total" style="color:${wrColor(total)}">${fmtWr(total)}</div>
+      ${rows || '<div class="an-tip-empty">No champion picked</div>'}`;
+  }
+ 
+  tip.style.display = 'block';
+  const margin = 14;
+  let left = clientX + margin;
+  let top = clientY + margin;
+  if (left + tip.offsetWidth > window.innerWidth - 8) left = clientX - tip.offsetWidth - margin;
+  if (top + tip.offsetHeight > window.innerHeight - 8) top = clientY - tip.offsetHeight - margin;
+  tip.style.left = Math.max(8, left) + 'px';
+  tip.style.top = Math.max(8, top) + 'px';
+}
+ 
+const scalingHost = document.getElementById('analysis-content');
+if (scalingHost) {
+  scalingHost.addEventListener('mousemove', e => {
+    const pt = e.target.closest ? e.target.closest('.an-scaling-point') : null;
+    if (pt) showScalingTip(pt, e.clientX, e.clientY);
+    else hideScalingTip();
+  });
+  scalingHost.addEventListener('mouseleave', hideScalingTip);
 }
 
 
